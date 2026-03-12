@@ -14,16 +14,587 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_activity_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      forum_comments: {
+        Row: {
+          author_id: string
+          comment: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          comment: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_posts: {
+        Row: {
+          author_id: string
+          category: Database["public"]["Enums"]["forum_category"]
+          content: string
+          created_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          author_id: string
+          category?: Database["public"]["Enums"]["forum_category"]
+          content: string
+          created_at?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          author_id?: string
+          category?: Database["public"]["Enums"]["forum_category"]
+          content?: string
+          created_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      memorial_followers: {
+        Row: {
+          followed_at: string
+          id: string
+          memorial_id: string
+          user_id: string
+        }
+        Insert: {
+          followed_at?: string
+          id?: string
+          memorial_id: string
+          user_id: string
+        }
+        Update: {
+          followed_at?: string
+          id?: string
+          memorial_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memorial_followers_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memorial_pages: {
+        Row: {
+          activation_expiry: string | null
+          birth_year: number
+          common_phrase: string | null
+          created_at: string
+          created_by: string
+          death_year: number
+          full_name: string
+          id: string
+          life_lesson: string | null
+          personality_summary: string | null
+          relationship_to_creator: string
+          status: Database["public"]["Enums"]["memorial_status"]
+          unforgettable_moment: string | null
+          what_to_remember: string | null
+        }
+        Insert: {
+          activation_expiry?: string | null
+          birth_year: number
+          common_phrase?: string | null
+          created_at?: string
+          created_by: string
+          death_year: number
+          full_name: string
+          id?: string
+          life_lesson?: string | null
+          personality_summary?: string | null
+          relationship_to_creator: string
+          status?: Database["public"]["Enums"]["memorial_status"]
+          unforgettable_moment?: string | null
+          what_to_remember?: string | null
+        }
+        Update: {
+          activation_expiry?: string | null
+          birth_year?: number
+          common_phrase?: string | null
+          created_at?: string
+          created_by?: string
+          death_year?: number
+          full_name?: string
+          id?: string
+          life_lesson?: string | null
+          personality_summary?: string | null
+          relationship_to_creator?: string
+          status?: Database["public"]["Enums"]["memorial_status"]
+          unforgettable_moment?: string | null
+          what_to_remember?: string | null
+        }
+        Relationships: []
+      }
+      memory_keywords: {
+        Row: {
+          frequency: number
+          id: string
+          keyword: string
+          memorial_id: string
+        }
+        Insert: {
+          frequency?: number
+          id?: string
+          keyword: string
+          memorial_id: string
+        }
+        Update: {
+          frequency?: number
+          id?: string
+          keyword?: string
+          memorial_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_keywords_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_prompts: {
+        Row: {
+          created_at: string
+          id: string
+          prompt_text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt_text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          prompt_text?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          memorial_id: string
+          payment_reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          memorial_id: string
+          payment_reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          memorial_id?: string
+          payment_reference?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          last_login: string | null
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          last_login?: string | null
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_login?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
+      prompt_responses: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          memorial_id: string
+          prompt_id: string
+          response: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          memorial_id: string
+          prompt_id: string
+          response: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          memorial_id?: string
+          prompt_id?: string
+          response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_responses_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_responses_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "memory_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          id: string
+          reason: string
+          reported_by: string
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          id?: string
+          reason: string
+          reported_by: string
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          reported_by?: string
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: []
+      }
+      stories: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          memorial_id: string
+          story_type: Database["public"]["Enums"]["story_type"]
+          title: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          memorial_id: string
+          story_type?: Database["public"]["Enums"]["story_type"]
+          title: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          memorial_id?: string
+          story_type?: Database["public"]["Enums"]["story_type"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_comments: {
+        Row: {
+          author_id: string
+          comment: string
+          created_at: string
+          id: string
+          story_id: string
+        }
+        Insert: {
+          author_id: string
+          comment: string
+          created_at?: string
+          id?: string
+          story_id: string
+        }
+        Update: {
+          author_id?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_comments_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          reaction_type: Database["public"]["Enums"]["reaction_type"]
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reaction_type: Database["public"]["Enums"]["reaction_type"]
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reaction_type?: Database["public"]["Enums"]["reaction_type"]
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_reactions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_suspensions: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          suspended_by: string
+          suspension_end_date: string | null
+          suspension_type: Database["public"]["Enums"]["suspension_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          suspended_by: string
+          suspension_end_date?: string | null
+          suspension_type?: Database["public"]["Enums"]["suspension_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          suspended_by?: string
+          suspension_end_date?: string | null
+          suspension_type?: Database["public"]["Enums"]["suspension_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_warnings: {
+        Row: {
+          created_at: string
+          id: string
+          issued_by_admin: string
+          user_id: string
+          warning_reason: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issued_by_admin: string
+          user_id: string
+          warning_reason: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issued_by_admin?: string
+          user_id?: string
+          warning_reason?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "super_admin"
+        | "platform_admin"
+        | "community_moderator"
+        | "memorial_moderator"
+        | "support_admin"
+      forum_category:
+        | "losing_a_parent"
+        | "losing_a_friend"
+        | "community_heroes"
+        | "life_lessons"
+        | "remembering_teachers"
+        | "celebrating_life"
+      memorial_status: "active" | "inactive" | "community"
+      reaction_type: "touched_me" | "relate_to_this" | "thank_you_for_sharing"
+      report_status: "pending" | "under_review" | "resolved" | "dismissed"
+      story_type: "memory" | "lesson" | "letter" | "reflection"
+      suspension_type: "temporary" | "permanent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +721,27 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "super_admin",
+        "platform_admin",
+        "community_moderator",
+        "memorial_moderator",
+        "support_admin",
+      ],
+      forum_category: [
+        "losing_a_parent",
+        "losing_a_friend",
+        "community_heroes",
+        "life_lessons",
+        "remembering_teachers",
+        "celebrating_life",
+      ],
+      memorial_status: ["active", "inactive", "community"],
+      reaction_type: ["touched_me", "relate_to_this", "thank_you_for_sharing"],
+      report_status: ["pending", "under_review", "resolved", "dismissed"],
+      story_type: ["memory", "lesson", "letter", "reflection"],
+      suspension_type: ["temporary", "permanent"],
+    },
   },
 } as const
