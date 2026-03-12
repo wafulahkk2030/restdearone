@@ -85,6 +85,14 @@ const MemorialPage = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Story shared!" });
+      // AI: Extract keywords for Memory Echo Wall
+      supabase.functions.invoke("ai-tracking", {
+        body: { action: "extract_keywords", data: { memorial_id: id, text: `${storyForm.title} ${storyForm.content}` } },
+      });
+      // AI: Moderate content
+      supabase.functions.invoke("ai-tracking", {
+        body: { action: "moderate_content", data: { content: storyForm.content, content_type: "story", content_id: id } },
+      });
       setStoryForm({ title: "", content: "", story_type: "memory" });
       setShowStoryForm(false);
       loadAll();
