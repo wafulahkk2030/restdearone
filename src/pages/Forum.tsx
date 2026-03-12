@@ -42,7 +42,7 @@ const Forum = () => {
       .select("*, profiles:author_id(display_name, username)")
       .order("created_at", { ascending: false })
       .limit(50);
-    if (activeCategory) query = query.eq("category", activeCategory);
+    if (activeCategory) query = query.eq("category", activeCategory as any);
     const { data } = await query;
     setPosts(data || []);
     setLoading(false);

@@ -63,7 +63,7 @@ const Admin = () => {
     setLoading(false);
   };
 
-  const updateReportStatus = async (reportId: string, status: string) => {
+  const updateReportStatus = async (reportId: string, status: "pending" | "under_review" | "resolved" | "dismissed") => {
     await supabase.from("reports").update({ status }).eq("id", reportId);
     await supabase.from("admin_activity_logs").insert({
       admin_id: user!.id,
