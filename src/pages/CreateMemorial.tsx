@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const relationships = [
   "Father", "Mother", "Brother", "Sister", "Friend",
@@ -12,6 +16,10 @@ const relationships = [
 
 const CreateMemorial = () => {
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     fullName: "",
     birthYear: "",
@@ -26,6 +34,38 @@ const CreateMemorial = () => {
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
 
+  const handleSubmit = async () => {
+    if (!user) {
+      toast({ title: "Please sign in first", variant: "destructive" });
+      navigate("/login");
+      return;
+    }
+    if (!form.fullName || !form.birthYear || !form.deathYear || !form.relationship) {
+      toast({ title: "Please fill in the required fields", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await supabase.from("memorial_pages").insert({
+      created_by: user.id,
+      full_name: form.fullName,
+      birth_year: parseInt(form.birthYear),
+      death_year: parseInt(form.deathYear),
+      relationship_to_creator: form.relationship.toLowerCase(),
+      personality_summary: form.personality || null,
+      unforgettable_moment: form.unforgettableMoment || null,
+      common_phrase: form.commonPhrase || null,
+      life_lesson: form.lifeLesson || null,
+      what_to_remember: form.whatToRemember || null,
+    }).select().single();
+    setLoading(false);
+    if (error) {
+      toast({ title: "Error creating page", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Memory Page Created!", description: `${form.fullName}'s story will live on.` });
+      navigate(`/memorial/${data.id}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -36,6 +76,11 @@ const CreateMemorial = () => {
             <p className="text-muted-foreground font-body text-sm">
               Tell us about the person you want to remember. Every detail helps keep their story alive.
             </p>
+            {!user && (
+              <p className="text-destructive font-body text-sm mt-2">
+                You need to <a href="/signup" className="underline font-medium">create an account</a> first.
+              </p>
+            )}
             <div className="flex items-center justify-center gap-2 mt-6">
               {[1, 2, 3].map(s => (
                 <div key={s} className={`h-2 rounded-full transition-all ${s === step ? "w-12 bg-primary" : s < step ? "w-8 bg-sage" : "w-8 bg-border"}`} />
@@ -52,11 +97,11 @@ const CreateMemorial = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="font-body text-sm">Birth Year</Label>
-                  <Input placeholder="e.g. 1989" value={form.birthYear} onChange={e => update("birthYear", e.target.value)} className="mt-1" />
+                  <Input placeholder="e.g. 1989" type="number" value={form.birthYear} onChange={e => update("birthYear", e.target.value)} className="mt-1" />
                 </div>
                 <div>
                   <Label className="font-body text-sm">Death Year</Label>
-                  <Input placeholder="e.g. 2023" value={form.deathYear} onChange={e => update("deathYear", e.target.value)} className="mt-1" />
+                  <Input placeholder="e.g. 2023" type="number" value={form.deathYear} onChange={e => update("deathYear", e.target.value)} className="mt-1" />
                 </div>
               </div>
               <div>
@@ -116,8 +161,8 @@ const CreateMemorial = () => {
               </div>
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-                <Button variant="hero" onClick={() => { /* Will submit to Supabase */ }}>
-                  Create Memory Page
+                <Button variant="hero" onClick={handleSubmit} disabled={loading}>
+                  {loading ? "Creating..." : "Create Memory Page"}
                 </Button>
               </div>
             </div>

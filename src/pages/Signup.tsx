@@ -1,16 +1,41 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
   const [form, setForm] = useState({ name: "", username: "", email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Will connect to Supabase
+    if (!form.name || !form.username || !form.email || !form.password) {
+      toast({ title: "All fields are required", variant: "destructive" });
+      return;
+    }
+    if (form.password.length < 6) {
+      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { error } = await signUp(form.email, form.password, {
+      username: form.username,
+      display_name: form.name,
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Account created!", description: "Welcome to RestDearOne." });
+      navigate("/");
+    }
   };
 
   return (
@@ -41,8 +66,8 @@ const Signup = () => {
               <Input id="password" type="password" placeholder="Create a password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="mt-1" />
             </div>
 
-            <Button type="submit" className="w-full" variant="hero">
-              Create Account
+            <Button type="submit" className="w-full" variant="hero" disabled={loading}>
+              {loading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 

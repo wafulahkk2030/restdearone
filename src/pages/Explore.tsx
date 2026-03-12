@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Search, Heart, BookOpen, Users } from "lucide-react";
+import { Search, BookOpen, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -45,12 +45,7 @@ const Explore = () => {
             </p>
             <div className="relative max-w-md mx-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search names, stories, or lessons..."
-                className="pl-10"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <Input placeholder="Search names, stories, or lessons..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
           </motion.div>
 
@@ -80,22 +75,14 @@ const Explore = () => {
                         {m.status === 'active' ? '🟢 Active' : m.status}
                       </span>
                     </div>
-                    <h3 className="font-display text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
-                      {m.full_name}
-                    </h3>
+                    <h3 className="font-display text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">{m.full_name}</h3>
                     <p className="text-xs text-muted-foreground font-body mb-3">{m.birth_year} – {m.death_year}</p>
                     {m.personality_summary && (
-                      <p className="text-sm text-foreground/80 font-body leading-relaxed italic line-clamp-2">
-                        "{m.personality_summary}"
-                      </p>
+                      <p className="text-sm text-foreground/80 font-body leading-relaxed italic line-clamp-2">"{m.personality_summary}"</p>
                     )}
                     <div className="mt-4 flex items-center gap-4">
-                      <span className="text-xs text-primary font-body font-medium flex items-center gap-1">
-                        <BookOpen className="w-3 h-3" /> Read Stories
-                      </span>
-                      <span className="text-xs text-sage font-body font-medium flex items-center gap-1">
-                        <Users className="w-3 h-3" /> Follow
-                      </span>
+                      <span className="text-xs text-primary font-body font-medium flex items-center gap-1"><BookOpen className="w-3 h-3" /> Read Stories</span>
+                      <span className="text-xs text-sage font-body font-medium flex items-center gap-1"><Users className="w-3 h-3" /> Follow</span>
                     </div>
                   </motion.div>
                 </Link>

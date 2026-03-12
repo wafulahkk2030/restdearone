@@ -1,53 +1,35 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-
-const samplePages = [
-  {
-    name: "Brian Kisiangani",
-    years: "1989 – 2023",
-    relationship: "Friend",
-    personality: "He was the loudest in the room but always the kindest. Brian believed every morning should start with tea and a good conversation.",
-    phrase: "Mornings should start with kindness.",
-    lesson: "Generosity does not require wealth.",
-    stories: 14,
-    followers: 28,
-  },
-  {
-    name: "Mary Njeri",
-    years: "1974 – 2018",
-    relationship: "Mother",
-    personality: "Quiet strength. She never raised her voice, but when she spoke, everyone listened.",
-    phrase: "Love is in the small things.",
-    lesson: "Patience is a garden — you water it daily, and one day it blooms.",
-    stories: 22,
-    followers: 45,
-  },
-  {
-    name: "James Ochieng",
-    years: "1955 – 2021",
-    relationship: "Father",
-    personality: "A storyteller, a builder, a man who measured his wealth in the lives he touched.",
-    phrase: "A man is measured not by what he has, but by what he gives.",
-    lesson: "Show up. Even when it's hard, show up for the people you love.",
-    stories: 31,
-    followers: 67,
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const Discover = () => {
-  const [current, setCurrent] = useState<number | null>(null);
+  const [page, setPage] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const discoverRandom = () => {
-    let next = Math.floor(Math.random() * samplePages.length);
-    if (next === current) next = (next + 1) % samplePages.length;
-    setCurrent(next);
+  const discoverRandom = async () => {
+    setLoading(true);
+    // Get count then fetch random
+    const { count } = await supabase.from("memorial_pages").select("id", { count: "exact" });
+    if (!count || count === 0) {
+      setPage(null);
+      setLoading(false);
+      return;
+    }
+    const offset = Math.floor(Math.random() * count);
+    const { data } = await supabase
+      .from("memorial_pages")
+      .select("*")
+      .range(offset, offset)
+      .limit(1)
+      .single();
+    setPage(data);
+    setLoading(false);
   };
-
-  const page = current !== null ? samplePages[current] : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,48 +41,61 @@ const Discover = () => {
             <p className="text-muted-foreground font-body max-w-lg mx-auto mb-8">
               Every person who ever lived had a story worth knowing. Let us introduce you to someone beautiful.
             </p>
-            <Button variant="warm" size="lg" className="gap-2" onClick={discoverRandom}>
+            <Button variant="warm" size="lg" className="gap-2" onClick={discoverRandom} disabled={loading}>
               <Shuffle className="w-4 h-4" />
-              {current === null ? "Remember Someone Randomly" : "Discover Another Life"}
+              {loading ? "Finding..." : page ? "Discover Another Life" : "Remember Someone Randomly"}
             </Button>
           </motion.div>
 
           {page && (
             <motion.div
-              key={current}
+              key={page.id}
               className="mt-12 bg-card border border-border rounded-2xl p-8 text-left"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
               <div className="text-center mb-6">
-                <h2 className="font-display text-2xl font-bold text-foreground">{page.name}</h2>
-                <p className="text-muted-foreground font-body text-sm">{page.years}</p>
-                <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-body bg-accent text-accent-foreground">
-                  Remembered by their {page.relationship}
+                <h2 className="font-display text-2xl font-bold text-foreground">{page.full_name}</h2>
+                <p className="text-muted-foreground font-body text-sm">{page.birth_year} – {page.death_year}</p>
+                <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-body bg-accent text-accent-foreground capitalize">
+                  Remembered by their {page.relationship_to_creator}
                 </span>
               </div>
 
               <div className="space-y-5">
-                <div>
-                  <h3 className="font-display text-sm font-semibold text-foreground mb-1">Personality</h3>
-                  <p className="text-sm text-foreground/80 font-body leading-relaxed">{page.personality}</p>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-semibold text-foreground mb-1">They Used to Say</h3>
-                  <p className="text-sm text-foreground/80 font-body italic">"{page.phrase}"</p>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-semibold text-foreground mb-1">The Last Lesson</h3>
-                  <p className="text-sm text-foreground/80 font-body leading-relaxed">{page.lesson}</p>
-                </div>
+                {page.personality_summary && (
+                  <div>
+                    <h3 className="font-display text-sm font-semibold text-foreground mb-1">Personality</h3>
+                    <p className="text-sm text-foreground/80 font-body leading-relaxed">{page.personality_summary}</p>
+                  </div>
+                )}
+                {page.common_phrase && (
+                  <div>
+                    <h3 className="font-display text-sm font-semibold text-foreground mb-1">They Used to Say</h3>
+                    <p className="text-sm text-foreground/80 font-body italic">"{page.common_phrase}"</p>
+                  </div>
+                )}
+                {page.life_lesson && (
+                  <div>
+                    <h3 className="font-display text-sm font-semibold text-foreground mb-1">The Last Lesson</h3>
+                    <p className="text-sm text-foreground/80 font-body leading-relaxed">{page.life_lesson}</p>
+                  </div>
+                )}
+              </div>
 
-                <div className="flex items-center justify-center gap-6 pt-4 border-t border-border">
-                  <span className="text-xs text-muted-foreground font-body">{page.stories} memories shared</span>
-                  <span className="text-xs text-muted-foreground font-body">{page.followers} followers</span>
-                </div>
+              <div className="text-center mt-6">
+                <Link to={`/memorial/${page.id}`}>
+                  <Button variant="hero" size="sm">Visit Memory Page</Button>
+                </Link>
               </div>
             </motion.div>
+          )}
+
+          {!page && !loading && (
+            <div className="mt-12 text-center">
+              <p className="text-muted-foreground font-body text-sm">Click the button above to discover a life worth remembering.</p>
+            </div>
           )}
         </div>
       </div>
