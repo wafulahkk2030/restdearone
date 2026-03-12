@@ -1,1 +1,4 @@
 project_id = "fhzmyiykidecbrfpzorx"
+
+[functions.ai-tracking]
+verify_jwt = false
