@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle } from "lucide-react";
+import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag } from "lucide-react";
+import { getFlag } from "@/lib/countries";
 
 const storyTypeLabels: Record<string, { label: string; icon: any }> = {
   memory: { label: "Memory", icon: BookOpen },
@@ -17,6 +18,12 @@ const storyTypeLabels: Record<string, { label: string; icon: any }> = {
   lesson: { label: "Lesson", icon: Lightbulb },
   reflection: { label: "Reflection", icon: MessageCircle },
 };
+
+const reactionTypes = [
+  { type: "touched_me", label: "This touched me", emoji: "💛" },
+  { type: "relate_to_this", label: "I relate", emoji: "🤝" },
+  { type: "thank_you_for_sharing", label: "Thank you", emoji: "🙏" },
+];
 
 const MemorialPage = () => {
   const { id } = useParams();
@@ -31,6 +38,9 @@ const MemorialPage = () => {
   const [storyForm, setStoryForm] = useState({ title: "", content: "", story_type: "memory" });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [editingStory, setEditingStory] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", content: "" });
+  const [reactions, setReactions] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     if (id) loadAll();
@@ -40,7 +50,7 @@ const MemorialPage = () => {
     setLoading(true);
     const [memRes, storiesRes, kwRes, followRes] = await Promise.all([
       supabase.from("memorial_pages").select("*").eq("id", id).single(),
-      supabase.from("stories").select("*, profiles:author_id(display_name, username)").eq("memorial_id", id).order("created_at", { ascending: false }),
+      supabase.from("stories").select("*, profiles:author_id(display_name, username, country)").eq("memorial_id", id).order("created_at", { ascending: false }),
       supabase.from("memory_keywords").select("*").eq("memorial_id", id).order("frequency", { ascending: false }).limit(20),
       supabase.from("memorial_followers").select("id", { count: "exact" }).eq("memorial_id", id),
     ]);
@@ -48,6 +58,18 @@ const MemorialPage = () => {
     setStories(storiesRes.data || []);
     setKeywords(kwRes.data || []);
     setFollowers(followRes.count || 0);
+
+    // Load reactions for all stories
+    if (storiesRes.data?.length) {
+      const storyIds = storiesRes.data.map((s: any) => s.id);
+      const { data: rxns } = await supabase.from("story_reactions").select("*").in("story_id", storyIds);
+      const grouped: Record<string, any[]> = {};
+      (rxns || []).forEach((r: any) => {
+        if (!grouped[r.story_id]) grouped[r.story_id] = [];
+        grouped[r.story_id].push(r);
+      });
+      setReactions(grouped);
+    }
 
     if (user) {
       const { data } = await supabase.from("memorial_followers").select("id").eq("memorial_id", id).eq("user_id", user.id).maybeSingle();
@@ -85,18 +107,65 @@ const MemorialPage = () => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Story shared!" });
-      // AI: Extract keywords for Memory Echo Wall
       supabase.functions.invoke("ai-tracking", {
         body: { action: "extract_keywords", data: { memorial_id: id, text: `${storyForm.title} ${storyForm.content}` } },
       });
-      // AI: Moderate content
       supabase.functions.invoke("ai-tracking", {
         body: { action: "moderate_content", data: { content: storyForm.content, content_type: "story", content_id: id } },
+      });
+      supabase.functions.invoke("ai-tracking", {
+        body: { action: "track_activity", data: { user_id: user.id, event_type: "story_posted", metadata: { memorial_id: id } } },
       });
       setStoryForm({ title: "", content: "", story_type: "memory" });
       setShowStoryForm(false);
       loadAll();
     }
+  };
+
+  const startEdit = (story: any) => {
+    setEditingStory(story.id);
+    setEditForm({ title: story.title, content: story.content });
+  };
+
+  const submitEdit = async (storyId: string, currentEditCount: number) => {
+    if (currentEditCount >= 2) {
+      toast({ title: "Edit limit reached", description: "You can only edit a story twice to preserve memory integrity.", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from("stories")
+      .update({ title: editForm.title, content: editForm.content, edit_count: currentEditCount + 1 })
+      .eq("id", storyId);
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Story updated", description: `${2 - currentEditCount - 1} edit(s) remaining.` });
+      setEditingStory(null);
+      loadAll();
+    }
+  };
+
+  const toggleReaction = async (storyId: string, reactionType: string) => {
+    if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
+    const existing = (reactions[storyId] || []).find(r => r.user_id === user.id && r.reaction_type === reactionType);
+    if (existing) {
+      await supabase.from("story_reactions").delete().eq("id", existing.id);
+    } else {
+      await supabase.from("story_reactions").insert({ story_id: storyId, user_id: user.id, reaction_type: reactionType as any });
+    }
+    loadAll();
+  };
+
+  const reportContent = async (contentType: string, contentId: string, reason: string) => {
+    if (!user) return;
+    await supabase.from("reports").insert({
+      content_type: contentType,
+      content_id: contentId,
+      reported_by: user.id,
+      reason,
+    });
+    toast({ title: "Reported", description: "Thank you. Our team will review this." });
   };
 
   if (loading) return (
@@ -240,6 +309,10 @@ const MemorialPage = () => {
               stories.map((story, i) => {
                 const typeInfo = storyTypeLabels[story.story_type] || storyTypeLabels.memory;
                 const Icon = typeInfo.icon;
+                const storyReactions = reactions[story.id] || [];
+                const isEditing = editingStory === story.id;
+                const canEdit = user?.id === story.author_id && (story.edit_count || 0) < 2;
+
                 return (
                   <motion.div
                     key={story.id}
@@ -248,15 +321,71 @@ const MemorialPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                   >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Icon className="w-4 h-4 text-primary" />
-                      <span className="text-xs font-body font-medium bg-accent text-accent-foreground px-2 py-0.5 rounded-md">{typeInfo.label}</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-primary" />
+                        <span className="text-xs font-body font-medium bg-accent text-accent-foreground px-2 py-0.5 rounded-md">{typeInfo.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {canEdit && !isEditing && (
+                          <button onClick={() => startEdit(story)} className="text-xs text-muted-foreground hover:text-primary font-body flex items-center gap-1">
+                            <Edit className="w-3 h-3" /> Edit ({2 - (story.edit_count || 0)} left)
+                          </button>
+                        )}
+                        {user && user.id !== story.author_id && (
+                          <button
+                            onClick={() => reportContent("story", story.id, "Reported by user")}
+                            className="text-xs text-muted-foreground hover:text-destructive font-body"
+                          >
+                            <Flag className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <h4 className="font-display text-base font-semibold text-foreground mb-2">{story.title}</h4>
-                    <p className="text-sm text-foreground/80 font-body leading-relaxed whitespace-pre-wrap">{story.content}</p>
-                    <p className="text-xs text-muted-foreground font-body mt-3">
-                      — {story.profiles?.display_name || story.profiles?.username || "Anonymous"} · {new Date(story.created_at).toLocaleDateString()}
-                    </p>
+
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+                        <Textarea value={editForm.content} onChange={e => setEditForm(f => ({ ...f, content: e.target.value }))} className="min-h-[100px]" />
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" size="sm" onClick={() => setEditingStory(null)}>Cancel</Button>
+                          <Button variant="hero" size="sm" onClick={() => submitEdit(story.id, story.edit_count || 0)} disabled={submitting}>
+                            {submitting ? "Saving..." : "Save Edit"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h4 className="font-display text-base font-semibold text-foreground mb-2">{story.title}</h4>
+                        <p className="text-sm text-foreground/80 font-body leading-relaxed whitespace-pre-wrap">{story.content}</p>
+                        <div className="flex items-center justify-between mt-3">
+                          <p className="text-xs text-muted-foreground font-body">
+                            {story.profiles?.country && <span className="mr-1">{getFlag(story.profiles.country)}</span>}
+                            — {story.profiles?.display_name || story.profiles?.username || "Anonymous"} · {new Date(story.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {/* Reactions */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {reactionTypes.map(rt => {
+                            const count = storyReactions.filter(r => r.reaction_type === rt.type).length;
+                            const userReacted = user && storyReactions.some(r => r.reaction_type === rt.type && r.user_id === user.id);
+                            return (
+                              <button
+                                key={rt.type}
+                                onClick={() => toggleReaction(story.id, rt.type)}
+                                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-body border transition-all ${
+                                  userReacted ? "bg-primary/10 border-primary/30 text-primary" : "border-border text-muted-foreground hover:border-primary/30"
+                                }`}
+                              >
+                                <span>{rt.emoji}</span>
+                                <span>{rt.label}</span>
+                                {count > 0 && <span className="font-medium">({count})</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
                   </motion.div>
                 );
               })
