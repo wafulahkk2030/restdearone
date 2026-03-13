@@ -15,6 +15,8 @@ import Forum from "./pages/Forum";
 import MemorialPage from "./pages/MemorialPage";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
+import Communities from "./pages/Communities";
+import CommunityPage from "./pages/CommunityPage";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="/explore" element={<Explore />} />
             <Route path="/discover" element={<Discover />} />
             <Route path="/forum" element={<Forum />} />
+            <Route path="/communities" element={<Communities />} />
+            <Route path="/community/:id" element={<CommunityPage />} />
             <Route path="/memorial/:id" element={<MemorialPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />

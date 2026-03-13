@@ -6,9 +6,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const countries = [
+  { code: "KE", name: "Kenya", flag: "🇰🇪" },
+  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
+  { code: "ZA", name: "South Africa", flag: "🇿🇦" },
+  { code: "GH", name: "Ghana", flag: "🇬🇭" },
+  { code: "TZ", name: "Tanzania", flag: "🇹🇿" },
+  { code: "UG", name: "Uganda", flag: "🇺🇬" },
+  { code: "ET", name: "Ethiopia", flag: "🇪🇹" },
+  { code: "RW", name: "Rwanda", flag: "🇷🇼" },
+  { code: "US", name: "United States", flag: "🇺🇸" },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
+  { code: "CA", name: "Canada", flag: "🇨🇦" },
+  { code: "AU", name: "Australia", flag: "🇦🇺" },
+  { code: "DE", name: "Germany", flag: "🇩🇪" },
+  { code: "FR", name: "France", flag: "🇫🇷" },
+  { code: "IN", name: "India", flag: "🇮🇳" },
+  { code: "BR", name: "Brazil", flag: "🇧🇷" },
+  { code: "JP", name: "Japan", flag: "🇯🇵" },
+  { code: "AE", name: "UAE", flag: "🇦🇪" },
+  { code: "SA", name: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "CN", name: "China", flag: "🇨🇳" },
+  { code: "ZW", name: "Zimbabwe", flag: "🇿🇼" },
+  { code: "MW", name: "Malawi", flag: "🇲🇼" },
+  { code: "CD", name: "DR Congo", flag: "🇨🇩" },
+  { code: "CM", name: "Cameroon", flag: "🇨🇲" },
+  { code: "SN", name: "Senegal", flag: "🇸🇳" },
+].sort((a, b) => a.name.localeCompare(b.name));
 
 const Signup = () => {
-  const [form, setForm] = useState({ name: "", username: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", username: "", email: "", password: "", country: "" });
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const { toast } = useToast();
@@ -16,7 +45,7 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.username || !form.email || !form.password) {
+    if (!form.name || !form.username || !form.email || !form.password || !form.country) {
       toast({ title: "All fields are required", variant: "destructive" });
       return;
     }
@@ -29,13 +58,19 @@ const Signup = () => {
       username: form.username,
       display_name: form.name,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Account created!", description: "Welcome to RestDearOne." });
-      navigate("/");
+      return;
     }
+    // Update country on profile after signup
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profiles").update({ country: form.country }).eq("id", user.id);
+    }
+    setLoading(false);
+    toast({ title: "Account created!", description: "Welcome to RestDearOne." });
+    navigate("/");
   };
 
   return (
@@ -64,6 +99,20 @@ const Signup = () => {
             <div>
               <Label htmlFor="password" className="font-body text-sm">Password</Label>
               <Input id="password" type="password" placeholder="Create a password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="mt-1" />
+            </div>
+            <div>
+              <Label htmlFor="country" className="font-body text-sm">Country</Label>
+              <select
+                id="country"
+                value={form.country}
+                onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-body ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="">Select your country</option>
+                {countries.map(c => (
+                  <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                ))}
+              </select>
             </div>
 
             <Button type="submit" className="w-full" variant="hero" disabled={loading}>
