@@ -44,6 +44,222 @@ export type Database = {
         }
         Relationships: []
       }
+      community_groups: {
+        Row: {
+          billing_cycle: string
+          category: string
+          cover_questions: Json | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          member_count: number
+          name: string
+          price_kes: number
+          price_usd: number
+          story_count: number
+        }
+        Insert: {
+          billing_cycle?: string
+          category?: string
+          cover_questions?: Json | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          member_count?: number
+          name: string
+          price_kes?: number
+          price_usd?: number
+          story_count?: number
+        }
+        Update: {
+          billing_cycle?: string
+          category?: string
+          cover_questions?: Json | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          member_count?: number
+          name?: string
+          price_kes?: number
+          price_usd?: number
+          story_count?: number
+        }
+        Relationships: []
+      }
+      community_members: {
+        Row: {
+          ai_engagement_score: number | null
+          community_id: string
+          id: string
+          joined_at: string
+          last_active_at: string | null
+          onboarding_answers: Json | null
+          role: string
+          status: string
+          stories_posted: number
+          user_id: string
+        }
+        Insert: {
+          ai_engagement_score?: number | null
+          community_id: string
+          id?: string
+          joined_at?: string
+          last_active_at?: string | null
+          onboarding_answers?: Json | null
+          role?: string
+          status?: string
+          stories_posted?: number
+          user_id: string
+        }
+        Update: {
+          ai_engagement_score?: number | null
+          community_id?: string
+          id?: string
+          joined_at?: string
+          last_active_at?: string | null
+          onboarding_answers?: Json | null
+          role?: string
+          status?: string
+          stories_posted?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_payments: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          community_id: string
+          created_at: string
+          currency: string
+          expires_at: string | null
+          id: string
+          payment_reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          billing_cycle?: string
+          community_id: string
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          payment_reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          community_id?: string
+          created_at?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          payment_reference?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_payments_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_stories: {
+        Row: {
+          author_id: string
+          community_id: string
+          content: string
+          created_at: string
+          edit_count: number
+          id: string
+          story_type: string
+          title: string
+        }
+        Insert: {
+          author_id: string
+          community_id: string
+          content: string
+          created_at?: string
+          edit_count?: number
+          id?: string
+          story_type?: string
+          title: string
+        }
+        Update: {
+          author_id?: string
+          community_id?: string
+          content?: string
+          created_at?: string
+          edit_count?: number
+          id?: string
+          story_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_stories_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_flags: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string
+          details: Json | null
+          flag_reason: string
+          id: string
+          reviewed: boolean
+          user_id: string | null
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string
+          details?: Json | null
+          flag_reason: string
+          id?: string
+          reviewed?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          details?: Json | null
+          flag_reason?: string
+          id?: string
+          reviewed?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       forum_comments: {
         Row: {
           author_id: string
@@ -387,6 +603,7 @@ export type Database = {
           author_id: string
           content: string
           created_at: string
+          edit_count: number
           id: string
           memorial_id: string
           story_type: Database["public"]["Enums"]["story_type"]
@@ -396,6 +613,7 @@ export type Database = {
           author_id: string
           content: string
           created_at?: string
+          edit_count?: number
           id?: string
           memorial_id: string
           story_type?: Database["public"]["Enums"]["story_type"]
@@ -405,6 +623,7 @@ export type Database = {
           author_id?: string
           content?: string
           created_at?: string
+          edit_count?: number
           id?: string
           memorial_id?: string
           story_type?: Database["public"]["Enums"]["story_type"]
@@ -564,7 +783,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
