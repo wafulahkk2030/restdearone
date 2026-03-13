@@ -12,7 +12,8 @@ const Navbar = () => {
   const navLinks = [
     { to: "/", label: "Home" },
     { to: "/explore", label: "Explore Stories" },
-    { to: "/forum", label: "Community" },
+    { to: "/communities", label: "Communities" },
+    { to: "/forum", label: "Forum" },
     { to: "/discover", label: "Discover a Life" },
   ];
 
