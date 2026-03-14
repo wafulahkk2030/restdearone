@@ -20,7 +20,7 @@ const Communities = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", category: "life_lessons" });
+  const [form, setForm] = useState({ name: "", description: "", category: "life_lessons", customCategory: "" });
 
   useEffect(() => { loadCommunities(); }, []);
 
