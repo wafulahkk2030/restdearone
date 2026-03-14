@@ -93,11 +93,29 @@ const Communities = () => {
                   >
                     <option value="losing_a_parent">Losing a Parent</option>
                     <option value="losing_a_friend">Losing a Friend</option>
+                    <option value="losing_a_spouse">Losing a Spouse</option>
+                    <option value="losing_a_child">Losing a Child</option>
+                    <option value="losing_a_sibling">Losing a Sibling</option>
+                    <option value="sudden_loss">Sudden Loss</option>
                     <option value="community_heroes">Community Heroes</option>
                     <option value="life_lessons">Life Lessons</option>
                     <option value="remembering_teachers">Remembering Teachers</option>
                     <option value="celebrating_life">Celebrating Life</option>
+                    <option value="family_memories">Family Memories</option>
+                    <option value="workplace_memories">Workplace Memories</option>
+                    <option value="childhood_memories">Childhood Memories</option>
+                    <option value="faith_and_spirituality">Faith & Spirituality</option>
+                    <option value="military_and_service">Military & Service</option>
+                    <option value="other">Other</option>
                   </select>
+                  {form.category === "other" && (
+                    <Input
+                      placeholder="Describe your community category"
+                      value={form.customCategory || ""}
+                      onChange={e => setForm(f => ({ ...f, customCategory: e.target.value }))}
+                      className="mt-2"
+                    />
+                  )}
                 </div>
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
