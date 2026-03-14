@@ -17,6 +17,10 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Communities from "./pages/Communities";
 import CommunityPage from "./pages/CommunityPage";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CommunityGuidelines from "./pages/CommunityGuidelines";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +44,10 @@ const App = () => (
             <Route path="/memorial/:id" element={<MemorialPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/guidelines" element={<CommunityGuidelines />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

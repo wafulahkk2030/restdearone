@@ -319,6 +319,51 @@ export type Database = {
         }
         Relationships: []
       }
+      invites: {
+        Row: {
+          code: string
+          community_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          memorial_id: string | null
+          uses: number
+        }
+        Insert: {
+          code: string
+          community_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          memorial_id?: string | null
+          uses?: number
+        }
+        Update: {
+          code?: string
+          community_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          memorial_id?: string | null
+          uses?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invites_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memorial_followers: {
         Row: {
           followed_at: string
@@ -443,6 +488,33 @@ export type Database = {
           created_at?: string
           id?: string
           prompt_text?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          read?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          user_id?: string
         }
         Relationships: []
       }
