@@ -34,17 +34,27 @@ const Communities = () => {
   const createCommunity = async () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
     if (!form.name) { toast({ title: "Name is required", variant: "destructive" }); return; }
+
+    // Check community limits based on platform size
+    const totalCommunities = communities.length;
+    const maxAllowed = totalCommunities < 1000 ? 25 : totalCommunities < 2000 ? 30 : 40;
+    const { count: userCount } = await supabase.from("community_groups").select("id", { count: "exact", head: true }).eq("created_by", user.id);
+    if ((userCount || 0) >= 5) {
+      toast({ title: "You can create a maximum of 5 communities", variant: "destructive" });
+      return;
+    }
+
     setCreating(true);
+    const category = form.category === "other" ? (form.customCategory || "other") : form.category;
     const { data, error } = await supabase.from("community_groups").insert({
       name: form.name,
       description: form.description,
-      category: form.category,
+      category,
       created_by: user.id,
     }).select().single();
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      // Auto-join as admin
       await supabase.from("community_members").insert({
         community_id: data.id,
         user_id: user.id,
