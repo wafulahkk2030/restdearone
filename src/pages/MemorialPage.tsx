@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag } from "lucide-react";
+import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 
 const storyTypeLabels: Record<string, { label: string; icon: any }> = {
