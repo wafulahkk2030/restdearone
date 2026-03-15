@@ -116,6 +116,7 @@ const MemorialPage = () => {
 
   const submitStory = async () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
+    if (!isActive) { toast({ title: "This memorial page must be activated before posting stories", variant: "destructive" }); return; }
     if (!storyForm.title || !storyForm.content) { toast({ title: "Title and content required", variant: "destructive" }); return; }
     setSubmitting(true);
     const { error } = await supabase.from("stories").insert({
