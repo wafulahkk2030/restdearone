@@ -41,6 +41,29 @@ const MemorialPage = () => {
   const [editingStory, setEditingStory] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: "", content: "" });
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
+  const [activating, setActivating] = useState(false);
+
+  const isActive = memorial?.status === 'active';
+  const isOwner = user?.id === memorial?.created_by;
+
+  const activateMemorial = async () => {
+    if (!user) { toast({ title: "Please sign in first", variant: "destructive" }); return; }
+    setActivating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("initialize-payment", {
+        body: { type: "memorial", memorial_id: id },
+      });
+      if (error) throw error;
+      if (data?.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (err: any) {
+      toast({ title: "Payment error", description: err.message, variant: "destructive" });
+    }
+    setActivating(false);
+  };
 
   useEffect(() => {
     if (id) loadAll();
