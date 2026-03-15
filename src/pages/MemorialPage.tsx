@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag } from "lucide-react";
+import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 
 const storyTypeLabels: Record<string, { label: string; icon: any }> = {
@@ -41,6 +41,29 @@ const MemorialPage = () => {
   const [editingStory, setEditingStory] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: "", content: "" });
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
+  const [activating, setActivating] = useState(false);
+
+  const isActive = memorial?.status === 'active';
+  const isOwner = user?.id === memorial?.created_by;
+
+  const activateMemorial = async () => {
+    if (!user) { toast({ title: "Please sign in first", variant: "destructive" }); return; }
+    setActivating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("initialize-payment", {
+        body: { type: "memorial", memorial_id: id },
+      });
+      if (error) throw error;
+      if (data?.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        throw new Error("No payment URL received");
+      }
+    } catch (err: any) {
+      toast({ title: "Payment error", description: err.message, variant: "destructive" });
+    }
+    setActivating(false);
+  };
 
   useEffect(() => {
     if (id) loadAll();
@@ -93,6 +116,7 @@ const MemorialPage = () => {
 
   const submitStory = async () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
+    if (!isActive) { toast({ title: "This memorial page must be activated before posting stories", variant: "destructive" }); return; }
     if (!storyForm.title || !storyForm.content) { toast({ title: "Title and content required", variant: "destructive" }); return; }
     setSubmitting(true);
     const { error } = await supabase.from("stories").insert({
@@ -210,10 +234,22 @@ const MemorialPage = () => {
                 <Users className="w-4 h-4" />
                 {isFollowing ? "Following" : "Follow"}
               </Button>
-              <Button variant="hero" size="sm" onClick={() => setShowStoryForm(!showStoryForm)} className="gap-1">
-                <PenLine className="w-4 h-4" />
-                Write a Story
-              </Button>
+              {isActive ? (
+                <Button variant="hero" size="sm" onClick={() => setShowStoryForm(!showStoryForm)} className="gap-1">
+                  <PenLine className="w-4 h-4" />
+                  Write a Story
+                </Button>
+              ) : isOwner ? (
+                <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
+                  <CreditCard className="w-4 h-4" />
+                  {activating ? "Processing..." : "Activate Page — KES 250"}
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" disabled className="gap-1 opacity-60">
+                  <Lock className="w-4 h-4" />
+                  Page Not Active
+                </Button>
+              )}
             </div>
           </motion.div>
 

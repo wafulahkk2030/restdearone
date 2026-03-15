@@ -61,7 +61,7 @@ const CreateMemorial = () => {
     if (error) {
       toast({ title: "Error creating page", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Memory Page Created!", description: `${form.fullName}'s story will live on.` });
+      toast({ title: "Memory Page Created!", description: `Now activate ${form.fullName}'s page with a one-time payment of KES 250.` });
       navigate(`/memorial/${data.id}`);
     }
   };

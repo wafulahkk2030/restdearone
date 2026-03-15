@@ -46,21 +46,42 @@ const Communities = () => {
 
     setCreating(true);
     const category = form.category === "other" ? (form.customCategory || "other") : form.category;
+    
+    // Create community first (inactive until paid)
     const { data, error } = await supabase.from("community_groups").insert({
       name: form.name,
       description: form.description,
       category,
       created_by: user.id,
+      is_active: false,
     }).select().single();
+    
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      await supabase.from("community_members").insert({
-        community_id: data.id,
-        user_id: user.id,
-        role: "admin",
+      setCreating(false);
+      return;
+    }
+
+    // Add creator as admin member
+    await supabase.from("community_members").insert({
+      community_id: data.id,
+      user_id: user.id,
+      role: "admin",
+    });
+
+    // Initialize payment
+    try {
+      const { data: payData, error: payError } = await supabase.functions.invoke("initialize-payment", {
+        body: { type: "community", community_id: data.id, billing_cycle: "monthly" },
       });
-      toast({ title: "Community created!", description: "Activate it with a payment to start accepting members." });
+      if (payError) throw payError;
+      if (payData?.authorization_url) {
+        window.location.href = payData.authorization_url;
+        return;
+      }
+      throw new Error("No payment URL received");
+    } catch (err: any) {
+      toast({ title: "Community created but payment failed", description: err.message + ". Go to your dashboard to retry payment.", variant: "destructive" });
       navigate(`/community/${data.id}`);
     }
     setCreating(false);

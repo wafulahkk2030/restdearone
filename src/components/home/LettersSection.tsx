@@ -16,11 +16,17 @@ const LettersSection = () => {
     const load = async () => {
       const { data } = await supabase
         .from("stories")
-        .select("id, title, content, memorial_id, profiles:author_id(display_name)")
+        .select("id, title, content, memorial_id, author_id")
         .eq("story_type", "letter")
         .order("created_at", { ascending: false })
         .limit(4);
-      if (data && data.length > 0) setLetters(data);
+      if (data && data.length > 0) {
+        // Fetch display names separately
+        const authorIds = [...new Set(data.map(d => d.author_id))];
+        const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", authorIds);
+        const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+        setLetters(data.map(d => ({ ...d, profiles: profileMap[d.author_id] || {} })));
+      }
     };
     load();
   }, []);
