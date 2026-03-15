@@ -233,10 +233,22 @@ const MemorialPage = () => {
                 <Users className="w-4 h-4" />
                 {isFollowing ? "Following" : "Follow"}
               </Button>
-              <Button variant="hero" size="sm" onClick={() => setShowStoryForm(!showStoryForm)} className="gap-1">
-                <PenLine className="w-4 h-4" />
-                Write a Story
-              </Button>
+              {isActive ? (
+                <Button variant="hero" size="sm" onClick={() => setShowStoryForm(!showStoryForm)} className="gap-1">
+                  <PenLine className="w-4 h-4" />
+                  Write a Story
+                </Button>
+              ) : isOwner ? (
+                <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
+                  <CreditCard className="w-4 h-4" />
+                  {activating ? "Processing..." : "Activate Page — KES 250"}
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" disabled className="gap-1 opacity-60">
+                  <Lock className="w-4 h-4" />
+                  Page Not Active
+                </Button>
+              )}
             </div>
           </motion.div>
 
