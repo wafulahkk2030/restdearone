@@ -274,6 +274,53 @@ export type Database = {
         }
         Relationships: []
       }
+      flower_tributes: {
+        Row: {
+          created_at: string
+          flower_type: string
+          id: string
+          memorial_id: string
+          payment_reference: string | null
+          sender_name: string
+          sender_user_id: string
+          status: string
+          tribute_note: string | null
+          tribute_value: number
+        }
+        Insert: {
+          created_at?: string
+          flower_type: string
+          id?: string
+          memorial_id: string
+          payment_reference?: string | null
+          sender_name: string
+          sender_user_id: string
+          status?: string
+          tribute_note?: string | null
+          tribute_value: number
+        }
+        Update: {
+          created_at?: string
+          flower_type?: string
+          id?: string
+          memorial_id?: string
+          payment_reference?: string | null
+          sender_name?: string
+          sender_user_id?: string
+          status?: string
+          tribute_note?: string | null
+          tribute_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flower_tributes_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_comments: {
         Row: {
           author_id: string

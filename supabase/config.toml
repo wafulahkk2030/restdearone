@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.analytics-dashboard]
 verify_jwt = false
+
+[functions.send-flower-tribute]
+verify_jwt = false
