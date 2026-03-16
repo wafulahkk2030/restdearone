@@ -25,7 +25,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { type, memorial_id, community_id, billing_cycle } = await req.json();
+    const { type, memorial_id, community_id, billing_cycle, amount: clientAmount } = await req.json();
 
     const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -34,20 +34,78 @@ Deno.serve(async (req: Request) => {
     let metadata: Record<string, string> = { user_id: user.id };
 
     if (type === "memorial") {
+      // Memorial page activation - KES 100
       if (!memorial_id) throw new Error("memorial_id required");
       const { data: memorial } = await serviceClient.from("memorial_pages").select("id, created_by").eq("id", memorial_id).single();
       if (!memorial) throw new Error("Memorial not found");
-      amount = 25000; // KES 250 in kobo/cents
+      amount = 10000; // KES 100 in kobo/cents
       metadata.memorial_id = memorial_id;
       metadata.type = "memorial";
 
       await serviceClient.from("payments").insert({
         user_id: user.id,
         memorial_id,
-        amount: 250,
+        amount: 100,
         currency: "KES",
         status: "pending",
       });
+
+    } else if (type === "memorial_creation") {
+      // Payment for 3rd memorial creation (escalating)
+      if (!memorial_id) throw new Error("memorial_id required");
+      
+      // Server-side verification: count user's memorials to determine correct price
+      const { count } = await serviceClient.from("memorial_pages").select("id", { count: "exact", head: true }).eq("created_by", user.id);
+      const totalCreated = (count || 1) - 1; // -1 because the current one was just created
+      const groupNumber = Math.floor(totalCreated / 3);
+      const positionInGroup = totalCreated % 3;
+      
+      if (positionInGroup !== 2) {
+        throw new Error("Payment not required for this memorial");
+      }
+      
+      const serverAmount = 250 + (groupNumber * 250);
+      amount = serverAmount * 100; // Convert to kobo/cents
+      metadata.memorial_id = memorial_id;
+      metadata.type = "memorial_creation";
+
+      await serviceClient.from("payments").insert({
+        user_id: user.id,
+        memorial_id,
+        amount: serverAmount,
+        currency: "KES",
+        status: "pending",
+      });
+
+    } else if (type === "story_posting") {
+      // Payment for 3rd story per user on a memorial
+      if (!memorial_id) throw new Error("memorial_id required");
+      
+      // Server-side: count user's stories on this memorial
+      const { count } = await serviceClient.from("stories").select("id", { count: "exact", head: true })
+        .eq("author_id", user.id).eq("memorial_id", memorial_id);
+      const storyCount = count || 0;
+      const positionInGroup = storyCount % 3;
+      const groupNumber = Math.floor(storyCount / 3);
+      
+      if (positionInGroup !== 2) {
+        throw new Error("Payment not required for this story");
+      }
+      
+      const serverAmount = 250 + (groupNumber * 250);
+      amount = serverAmount * 100;
+      metadata.memorial_id = memorial_id;
+      metadata.type = "story_posting";
+      metadata.story_count = String(storyCount);
+
+      await serviceClient.from("payments").insert({
+        user_id: user.id,
+        memorial_id,
+        amount: serverAmount,
+        currency: "KES",
+        status: "pending",
+      });
+
     } else if (type === "community") {
       if (!community_id) throw new Error("community_id required");
       const cycle = billing_cycle || "monthly";

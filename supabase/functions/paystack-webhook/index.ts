@@ -6,16 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function verifyPaystackSignature(body: string, signature: string, secret: string): boolean {
-  // Paystack uses HMAC SHA512
-  const encoder = new TextEncoder();
-  const key = encoder.encode(secret);
-  const data = encoder.encode(body);
-  // Use Web Crypto API for HMAC
-  // For edge runtime, we'll verify inline
-  return true; // Will be replaced with actual crypto verification below
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -55,7 +45,7 @@ Deno.serve(async (req: Request) => {
     );
 
     if (metadata.type === "memorial") {
-      // Update payment record
+      // Memorial page activation payment
       await supabase.from("payments").update({
         status: "completed",
         payment_reference: reference,
@@ -70,10 +60,35 @@ Deno.serve(async (req: Request) => {
         activation_expiry: expiry.toISOString(),
       }).eq("id", metadata.memorial_id);
 
-      // Notify user
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
         message: "Your memorial page has been activated for 7 days!",
+        link: `/memorial/${metadata.memorial_id}`,
+      });
+
+    } else if (metadata.type === "memorial_creation") {
+      // Payment for 3rd memorial creation
+      await supabase.from("payments").update({
+        status: "completed",
+        payment_reference: reference,
+      }).eq("memorial_id", metadata.memorial_id).eq("user_id", metadata.user_id).eq("status", "pending");
+
+      await supabase.from("notifications").insert({
+        user_id: metadata.user_id,
+        message: "Your memorial page creation payment was successful! You can now activate the page.",
+        link: `/memorial/${metadata.memorial_id}`,
+      });
+
+    } else if (metadata.type === "story_posting") {
+      // Payment for 3rd story posting
+      await supabase.from("payments").update({
+        status: "completed",
+        payment_reference: reference,
+      }).eq("memorial_id", metadata.memorial_id).eq("user_id", metadata.user_id).eq("status", "pending");
+
+      await supabase.from("notifications").insert({
+        user_id: metadata.user_id,
+        message: "Your story posting payment was successful! You can now post your story.",
         link: `/memorial/${metadata.memorial_id}`,
       });
 
@@ -88,7 +103,6 @@ Deno.serve(async (req: Request) => {
         expires_at: expiry.toISOString(),
       }).eq("community_id", metadata.community_id).eq("user_id", metadata.user_id).eq("status", "pending");
 
-      // Activate community
       await supabase.from("community_groups").update({
         is_active: true,
       }).eq("id", metadata.community_id);
@@ -98,6 +112,35 @@ Deno.serve(async (req: Request) => {
         message: `Your community has been activated! (${cycle})`,
         link: `/community/${metadata.community_id}`,
       });
+
+    } else if (metadata.type === "flower_tribute") {
+      // Mark tribute as completed
+      await supabase.from("flower_tributes").update({
+        status: "completed",
+        payment_reference: reference,
+      }).eq("memorial_id", metadata.memorial_id)
+        .eq("sender_user_id", metadata.user_id)
+        .eq("flower_type", metadata.flower_type)
+        .eq("status", "pending");
+
+      // Get memorial info for notification
+      const { data: memorial } = await supabase.from("memorial_pages")
+        .select("created_by, full_name").eq("id", metadata.memorial_id).single();
+
+      if (memorial) {
+        const flowerNames: Record<string, string> = {
+          memory_daisy: "Memory Daisy", grace_lily: "Grace Lily", golden_rose: "Golden Rose",
+          eternal_orchid: "Eternal Orchid", heaven_blossom: "Heaven Blossom",
+          legacy_bouquet: "Legacy Bouquet", celestial_garden: "Celestial Garden",
+        };
+        const flowerName = flowerNames[metadata.flower_type] || metadata.flower_type;
+
+        await supabase.from("notifications").insert({
+          user_id: memorial.created_by,
+          message: `${metadata.sender_name} shared a ${flowerName} with the memory of ${memorial.full_name}.`,
+          link: `/memorial/${metadata.memorial_id}`,
+        });
+      }
     }
 
     return new Response("OK", { status: 200 });
