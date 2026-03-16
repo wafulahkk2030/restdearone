@@ -9,8 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock } from "lucide-react";
+import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2 } from "lucide-react";
 import { getFlag } from "@/lib/countries";
+import FlowerTributeDialog from "@/components/memorial/FlowerTributeDialog";
+import TributeGarden from "@/components/memorial/TributeGarden";
 
 const storyTypeLabels: Record<string, { label: string; icon: any }> = {
   memory: { label: "Memory", icon: BookOpen },
@@ -42,6 +44,8 @@ const MemorialPage = () => {
   const [editForm, setEditForm] = useState({ title: "", content: "" });
   const [reactions, setReactions] = useState<Record<string, any[]>>({});
   const [activating, setActivating] = useState(false);
+  const [showFlowerDialog, setShowFlowerDialog] = useState(false);
+  const [storyPaymentInfo, setStoryPaymentInfo] = useState<{ required: boolean; amount: number; freeRemaining: number } | null>(null);
 
   const isActive = memorial?.status === 'active';
   const isOwner = user?.id === memorial?.created_by;
@@ -65,9 +69,32 @@ const MemorialPage = () => {
     setActivating(false);
   };
 
+  // Check story posting limits for current user
+  const checkStoryLimits = async () => {
+    if (!user || !id) return;
+    const { count } = await supabase.from("stories").select("id", { count: "exact", head: true })
+      .eq("author_id", user.id).eq("memorial_id", id);
+    const storyCount = count || 0;
+    const positionInGroup = storyCount % 3;
+    const groupNumber = Math.floor(storyCount / 3);
+
+    if (positionInGroup === 2) {
+      const amount = 250 + (groupNumber * 250);
+      setStoryPaymentInfo({ required: true, amount, freeRemaining: 0 });
+    } else {
+      const freeRemaining = 2 - positionInGroup;
+      const nextAmount = 250 + (groupNumber * 250);
+      setStoryPaymentInfo({ required: false, amount: nextAmount, freeRemaining });
+    }
+  };
+
   useEffect(() => {
     if (id) loadAll();
   }, [id]);
+
+  useEffect(() => {
+    if (user && id) checkStoryLimits();
+  }, [user, id, stories.length]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -82,7 +109,6 @@ const MemorialPage = () => {
     setKeywords(kwRes.data || []);
     setFollowers(followRes.count || 0);
 
-    // Load reactions for all stories
     if (storiesRes.data?.length) {
       const storyIds = storiesRes.data.map((s: any) => s.id);
       const { data: rxns } = await supabase.from("story_reactions").select("*").in("story_id", storyIds);
@@ -114,10 +140,44 @@ const MemorialPage = () => {
     }
   };
 
+  const handleWriteStory = async () => {
+    if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
+    if (!isActive) { toast({ title: "This memorial page must be activated first", variant: "destructive" }); return; }
+
+    // Re-check story limits
+    await checkStoryLimits();
+
+    if (storyPaymentInfo?.required) {
+      // Redirect to payment
+      try {
+        const { data, error } = await supabase.functions.invoke("initialize-payment", {
+          body: { type: "story_posting", memorial_id: id },
+        });
+        if (error) throw error;
+        if (data?.authorization_url) {
+          window.location.href = data.authorization_url;
+          return;
+        }
+      } catch (err: any) {
+        toast({ title: "Payment error", description: err.message, variant: "destructive" });
+        return;
+      }
+    }
+
+    setShowStoryForm(!showStoryForm);
+  };
+
   const submitStory = async () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
     if (!isActive) { toast({ title: "This memorial page must be activated before posting stories", variant: "destructive" }); return; }
     if (!storyForm.title || !storyForm.content) { toast({ title: "Title and content required", variant: "destructive" }); return; }
+
+    // Server-side will also validate, but double-check client-side
+    if (storyPaymentInfo?.required) {
+      toast({ title: "Payment required", description: `You need to pay KES ${storyPaymentInfo.amount} to post this story.`, variant: "destructive" });
+      return;
+    }
+
     setSubmitting(true);
     const { error } = await supabase.from("stories").insert({
       memorial_id: id,
@@ -134,12 +194,6 @@ const MemorialPage = () => {
       supabase.functions.invoke("ai-tracking", {
         body: { action: "extract_keywords", data: { memorial_id: id, text: `${storyForm.title} ${storyForm.content}` } },
       });
-      supabase.functions.invoke("ai-tracking", {
-        body: { action: "moderate_content", data: { content: storyForm.content, content_type: "story", content_id: id } },
-      });
-      supabase.functions.invoke("ai-tracking", {
-        body: { action: "track_activity", data: { user_id: user.id, event_type: "story_posted", metadata: { memorial_id: id } } },
-      });
       setStoryForm({ title: "", content: "", story_type: "memory" });
       setShowStoryForm(false);
       loadAll();
@@ -153,7 +207,7 @@ const MemorialPage = () => {
 
   const submitEdit = async (storyId: string, currentEditCount: number) => {
     if (currentEditCount >= 2) {
-      toast({ title: "Edit limit reached", description: "You can only edit a story twice to preserve memory integrity.", variant: "destructive" });
+      toast({ title: "Edit limit reached", description: "You can only edit a story twice.", variant: "destructive" });
       return;
     }
     setSubmitting(true);
@@ -192,6 +246,19 @@ const MemorialPage = () => {
     toast({ title: "Reported", description: "Thank you. Our team will review this." });
   };
 
+  // Format relationship display - handle "other" properly
+  const getRelationshipDisplay = () => {
+    const rel = memorial?.relationship_to_creator;
+    if (!rel) return "";
+    // Common relationships get "their X" treatment
+    const standardRels = ["father", "mother", "brother", "sister", "friend", "colleague", "teacher", "partner", "mentor", "spouse"];
+    if (standardRels.includes(rel)) {
+      return `Remembered by their ${rel}`;
+    }
+    // Custom relationship (from "Other" option) - display as-is
+    return `Remembered by ${rel}`;
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -222,27 +289,33 @@ const MemorialPage = () => {
             </div>
             <h1 className="font-display text-4xl font-bold text-foreground mb-1">{memorial.full_name}</h1>
             <p className="text-muted-foreground font-body">{memorial.birth_year} – {memorial.death_year}</p>
-            <p className="text-sm text-muted-foreground font-body mt-1 capitalize">Remembered by their {memorial.relationship_to_creator}</p>
+            <p className="text-sm text-muted-foreground font-body mt-1 capitalize">{getRelationshipDisplay()}</p>
 
             <div className="flex items-center justify-center gap-6 mt-4">
               <span className="text-xs text-muted-foreground font-body">{stories.length} {stories.length === 1 ? 'story' : 'stories'}</span>
               <span className="text-xs text-muted-foreground font-body">{followers} followers</span>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-4">
+            <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
               <Button variant={isFollowing ? "outline" : "warm"} size="sm" onClick={toggleFollow} className="gap-1">
                 <Users className="w-4 h-4" />
                 {isFollowing ? "Following" : "Follow"}
               </Button>
               {isActive ? (
-                <Button variant="hero" size="sm" onClick={() => setShowStoryForm(!showStoryForm)} className="gap-1">
-                  <PenLine className="w-4 h-4" />
-                  Write a Story
-                </Button>
+                <>
+                  <Button variant="hero" size="sm" onClick={handleWriteStory} className="gap-1">
+                    <PenLine className="w-4 h-4" />
+                    {storyPaymentInfo?.required ? `Write Story — KES ${storyPaymentInfo.amount}` : "Write a Story"}
+                  </Button>
+                  <Button variant="sage" size="sm" onClick={() => setShowFlowerDialog(true)} className="gap-1">
+                    <Flower2 className="w-4 h-4" />
+                    Offer a Flower
+                  </Button>
+                </>
               ) : isOwner ? (
                 <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
                   <CreditCard className="w-4 h-4" />
-                  {activating ? "Processing..." : "Activate Page — KES 250"}
+                  {activating ? "Processing..." : "Activate Page — KES 100"}
                 </Button>
               ) : (
                 <Button variant="outline" size="sm" disabled className="gap-1 opacity-60">
@@ -251,6 +324,17 @@ const MemorialPage = () => {
                 </Button>
               )}
             </div>
+
+            {/* Story payment info */}
+            {isActive && storyPaymentInfo && user && (
+              <div className="mt-3 text-xs text-muted-foreground font-body">
+                {storyPaymentInfo.required ? (
+                  <span className="text-warm">⚠️ Your next story requires a payment of KES {storyPaymentInfo.amount}. After payment, you get 2 free stories.</span>
+                ) : (
+                  <span>✅ {storyPaymentInfo.freeRemaining} free stor{storyPaymentInfo.freeRemaining !== 1 ? "ies" : "y"} remaining. Next payment: KES {storyPaymentInfo.amount}</span>
+                )}
+              </div>
+            )}
           </motion.div>
 
           {/* About section */}
@@ -280,6 +364,9 @@ const MemorialPage = () => {
               </div>
             )}
           </div>
+
+          {/* Tribute Garden */}
+          <TributeGarden memorialId={id!} />
 
           {/* Memory Echo Cloud */}
           {keywords.length > 0 && (
@@ -430,6 +517,14 @@ const MemorialPage = () => {
         </div>
       </div>
       <Footer />
+
+      {/* Flower Tribute Dialog */}
+      <FlowerTributeDialog
+        open={showFlowerDialog}
+        onOpenChange={setShowFlowerDialog}
+        memorialId={id!}
+        memorialName={memorial.full_name}
+      />
     </div>
   );
 };
