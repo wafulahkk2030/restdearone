@@ -48,8 +48,7 @@ Deno.serve(async (req: Request) => {
       // Memorial page activation payment
       await supabase.from("payments").update({
         status: "completed",
-        payment_reference: reference,
-      }).eq("memorial_id", metadata.memorial_id).eq("user_id", metadata.user_id).eq("status", "pending");
+      }).eq("payment_reference", reference).eq("status", "pending");
 
       // Activate memorial page for 7 days
       const expiry = new Date();
