@@ -112,6 +112,7 @@ Deno.serve(async (req: Request) => {
         amount: serverAmount,
         currency: "KES",
         status: "pending",
+        payment_reference: customReference,
       });
 
     } else if (type === "community") {
