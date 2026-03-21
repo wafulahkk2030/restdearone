@@ -96,9 +96,8 @@ Deno.serve(async (req: Request) => {
 
       await supabase.from("community_payments").update({
         status: "completed",
-        payment_reference: reference,
         expires_at: expiry.toISOString(),
-      }).eq("community_id", metadata.community_id).eq("user_id", metadata.user_id).eq("status", "pending");
+      }).eq("payment_reference", reference).eq("status", "pending");
 
       await supabase.from("community_groups").update({
         is_active: true,
