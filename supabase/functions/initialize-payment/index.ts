@@ -130,6 +130,7 @@ Deno.serve(async (req: Request) => {
         currency: "KES",
         billing_cycle: cycle,
         status: "pending",
+        payment_reference: customReference,
       });
     } else {
       throw new Error("Invalid payment type");
