@@ -81,8 +81,7 @@ Deno.serve(async (req: Request) => {
       // Payment for 3rd story posting
       await supabase.from("payments").update({
         status: "completed",
-        payment_reference: reference,
-      }).eq("memorial_id", metadata.memorial_id).eq("user_id", metadata.user_id).eq("status", "pending");
+      }).eq("payment_reference", reference).eq("status", "pending");
 
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
