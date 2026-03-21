@@ -29,6 +29,12 @@ Deno.serve(async (req: Request) => {
 
     const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+    // Generate custom reference: RDO-YYYYMMDD-XXXXX
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const uniqueCode = crypto.randomUUID().slice(0, 6).toUpperCase();
+    const customReference = `RDO-${dateStr}-${uniqueCode}`;
+
     let amount: number;
     let currency = "KES";
     let metadata: Record<string, string> = { user_id: user.id };
