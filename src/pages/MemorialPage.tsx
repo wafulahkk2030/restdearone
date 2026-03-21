@@ -354,17 +354,29 @@ const MemorialPage = () => {
                     Offer a Flower
                   </Button>
                 </>
-              ) : isOwner ? (
-                <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
-                  <CreditCard className="w-4 h-4" />
-                  {activating ? "Processing..." : "Activate Page — KES 100/year"}
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled className="gap-1 opacity-60">
-                  <Lock className="w-4 h-4" />
-                  Page Not Active
-                </Button>
-              )}
+              ) : (() => {
+                const url = new URL(window.location.href);
+                const fromPayment = url.searchParams.get('trxref') || url.searchParams.get('reference');
+                if (fromPayment) {
+                  return (
+                    <Button variant="outline" size="sm" disabled className="gap-1 animate-pulse">
+                      <CreditCard className="w-4 h-4" />
+                      ⏳ Confirming Payment...
+                    </Button>
+                  );
+                }
+                return isOwner ? (
+                  <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
+                    <CreditCard className="w-4 h-4" />
+                    {activating ? "Processing..." : "Activate Page — KES 100/year"}
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" disabled className="gap-1 opacity-60">
+                    <Lock className="w-4 h-4" />
+                    Page Not Active
+                  </Button>
+                );
+              })()}
             </div>
 
             {/* Story payment info */}

@@ -29,6 +29,12 @@ Deno.serve(async (req: Request) => {
 
     const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+    // Generate custom reference: RDO-YYYYMMDD-XXXXX
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const uniqueCode = crypto.randomUUID().slice(0, 6).toUpperCase();
+    const customReference = `RDO-${dateStr}-${uniqueCode}`;
+
     let amount: number;
     let currency = "KES";
     let metadata: Record<string, string> = { user_id: user.id };
@@ -48,6 +54,7 @@ Deno.serve(async (req: Request) => {
         amount: 100,
         currency: "KES",
         status: "pending",
+        payment_reference: customReference,
       });
 
     } else if (type === "memorial_creation") {
@@ -75,6 +82,7 @@ Deno.serve(async (req: Request) => {
         amount: serverAmount,
         currency: "KES",
         status: "pending",
+        payment_reference: customReference,
       });
 
     } else if (type === "story_posting") {
@@ -104,6 +112,7 @@ Deno.serve(async (req: Request) => {
         amount: serverAmount,
         currency: "KES",
         status: "pending",
+        payment_reference: customReference,
       });
 
     } else if (type === "community") {
@@ -121,6 +130,7 @@ Deno.serve(async (req: Request) => {
         currency: "KES",
         billing_cycle: cycle,
         status: "pending",
+        payment_reference: customReference,
       });
     } else {
       throw new Error("Invalid payment type");
@@ -139,8 +149,9 @@ Deno.serve(async (req: Request) => {
         email: profile?.email || user.email,
         amount,
         currency,
+        reference: customReference,
         metadata,
-        callback_url: `${req.headers.get("origin") || "https://restdearone.com"}/dashboard`,
+        callback_url: `${req.headers.get("origin") || "https://restdearone.com"}/memorial/${metadata.memorial_id || metadata.community_id}`,
       }),
     });
 

@@ -48,8 +48,7 @@ Deno.serve(async (req: Request) => {
       // Memorial page activation payment
       await supabase.from("payments").update({
         status: "completed",
-        payment_reference: reference,
-      }).eq("memorial_id", metadata.memorial_id).eq("user_id", metadata.user_id).eq("status", "pending");
+      }).eq("payment_reference", reference).eq("status", "pending");
 
       // Activate memorial page for 7 days
       const expiry = new Date();
@@ -70,8 +69,7 @@ Deno.serve(async (req: Request) => {
       // Payment for 3rd memorial creation
       await supabase.from("payments").update({
         status: "completed",
-        payment_reference: reference,
-      }).eq("memorial_id", metadata.memorial_id).eq("user_id", metadata.user_id).eq("status", "pending");
+      }).eq("payment_reference", reference).eq("status", "pending");
 
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
@@ -83,8 +81,7 @@ Deno.serve(async (req: Request) => {
       // Payment for 3rd story posting
       await supabase.from("payments").update({
         status: "completed",
-        payment_reference: reference,
-      }).eq("memorial_id", metadata.memorial_id).eq("user_id", metadata.user_id).eq("status", "pending");
+      }).eq("payment_reference", reference).eq("status", "pending");
 
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
@@ -99,9 +96,8 @@ Deno.serve(async (req: Request) => {
 
       await supabase.from("community_payments").update({
         status: "completed",
-        payment_reference: reference,
         expires_at: expiry.toISOString(),
-      }).eq("community_id", metadata.community_id).eq("user_id", metadata.user_id).eq("status", "pending");
+      }).eq("payment_reference", reference).eq("status", "pending");
 
       await supabase.from("community_groups").update({
         is_active: true,
