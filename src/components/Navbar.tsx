@@ -108,6 +108,16 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
+          {user && (
+            <>
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)} className={`block py-2 px-3 rounded-lg text-sm font-body transition-colors ${isActive("/dashboard") ? "bg-accent text-primary font-semibold" : "text-foreground hover:bg-accent"}`}>
+                Dashboard
+              </Link>
+              <Link to="/create-memorial" onClick={() => setMobileOpen(false)} className="block py-2 px-3 rounded-lg text-sm font-body text-primary font-semibold hover:bg-accent transition-colors">
+                + Create Memorial
+              </Link>
+            </>
+          )}
         </div>
       )}
     </nav>

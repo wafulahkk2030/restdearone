@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
 
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
-        message: "Your memorial page has been activated for 7 days!",
+        message: "Your memorial page has been activated for 1 year!",
         link: `/memorial/${metadata.memorial_id}`,
       });
 

@@ -315,7 +315,7 @@ const MemorialPage = () => {
               ) : isOwner ? (
                 <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
                   <CreditCard className="w-4 h-4" />
-                  {activating ? "Processing..." : "Activate Page — KES 100"}
+                  {activating ? "Processing..." : "Activate Page — KES 100/year"}
                 </Button>
               ) : (
                 <Button variant="outline" size="sm" disabled className="gap-1 opacity-60">
