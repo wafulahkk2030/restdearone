@@ -149,8 +149,9 @@ Deno.serve(async (req: Request) => {
         email: profile?.email || user.email,
         amount,
         currency,
+        reference: customReference,
         metadata,
-        callback_url: `${req.headers.get("origin") || "https://restdearone.com"}/dashboard`,
+        callback_url: `${req.headers.get("origin") || "https://restdearone.com"}/memorial/${metadata.memorial_id || metadata.community_id}`,
       }),
     });
 
