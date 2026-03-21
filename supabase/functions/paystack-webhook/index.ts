@@ -53,7 +53,7 @@ Deno.serve(async (req: Request) => {
 
       // Activate memorial page for 7 days
       const expiry = new Date();
-      expiry.setDate(expiry.getDate() + 7);
+      expiry.setFullYear(expiry.getFullYear() + 1);
 
       await supabase.from("memorial_pages").update({
         status: "active",
