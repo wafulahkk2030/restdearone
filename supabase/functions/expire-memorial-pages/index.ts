@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
     await supabase.from("memorial_pages").update({ status: "inactive" }).eq("id", page.id);
     await supabase.from("notifications").insert({
       user_id: page.created_by,
-      message: `The memorial page for ${page.full_name} has expired. Renew it to keep receiving memory prompts.`,
+      message: `The memorial page for ${page.full_name} has expired after 1 year. Renew it to keep receiving memory prompts.`,
       link: `/memorial/${page.id}`,
     });
   }
