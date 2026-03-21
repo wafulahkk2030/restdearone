@@ -35,11 +35,12 @@ const AdminPayments = () => {
           ) : payments.map(p => (
             <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-body text-foreground">{p.currency} {(p.amount / 100).toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground font-body">Ref: {p.payment_reference || 'N/A'} · {new Date(p.created_at).toLocaleDateString()}</p>
+                <p className="text-sm font-body text-foreground font-semibold">{p.currency} {p.amount.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground font-body">Ref: {p.payment_reference || 'Pending'} · {new Date(p.created_at).toLocaleDateString()}</p>
+                <p className="text-xs text-muted-foreground font-body">Memorial: {p.memorial_id?.slice(0, 8)}…</p>
               </div>
               <span className={`text-xs font-body px-2 py-0.5 rounded-full ${
-                p.status === 'success' ? 'bg-primary/20 text-primary' : p.status === 'pending' ? 'bg-accent text-accent-foreground' : 'bg-destructive/20 text-destructive'
+                p.status === 'completed' ? 'bg-sage/20 text-sage' : p.status === 'pending' ? 'bg-warm/20 text-warm' : 'bg-destructive/20 text-destructive'
               }`}>{p.status}</span>
             </div>
           ))}
