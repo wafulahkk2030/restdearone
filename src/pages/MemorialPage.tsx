@@ -50,6 +50,33 @@ const MemorialPage = () => {
   const isActive = memorial?.status === 'active';
   const isOwner = user?.id === memorial?.created_by;
 
+  // Poll for status update after returning from payment
+  useEffect(() => {
+    if (!id || !memorial || memorial.status !== 'inactive') return;
+    const url = new URL(window.location.href);
+    const fromPayment = url.searchParams.get('trxref') || url.searchParams.get('reference');
+    if (!fromPayment) return;
+
+    let attempts = 0;
+    const maxAttempts = 15;
+    const interval = setInterval(async () => {
+      attempts++;
+      const { data } = await supabase.from("memorial_pages").select("status, activation_expiry").eq("id", id).single();
+      if (data?.status === 'active') {
+        setMemorial((prev: any) => ({ ...prev, status: 'active', activation_expiry: data.activation_expiry }));
+        clearInterval(interval);
+        toast({ title: "🎉 Page Activated!", description: "Your memorial page is now active for 1 year." });
+        // Clean URL
+        url.searchParams.delete('trxref');
+        url.searchParams.delete('reference');
+        window.history.replaceState({}, '', url.pathname);
+      }
+      if (attempts >= maxAttempts) clearInterval(interval);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [id, memorial?.status]);
+
   const activateMemorial = async () => {
     if (!user) { toast({ title: "Please sign in first", variant: "destructive" }); return; }
     setActivating(true);
@@ -284,9 +311,24 @@ const MemorialPage = () => {
         <div className="max-w-3xl mx-auto">
           {/* Header */}
           <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="inline-block px-3 py-1 rounded-full text-xs font-body bg-accent text-accent-foreground mb-4">
-              {memorial.status === 'active' ? '🟢 Active Memory Page' : memorial.status === 'community' ? '🔵 Community Page' : '⚪ Inactive Page'}
-            </div>
+            {(() => {
+              const url = new URL(window.location.href);
+              const fromPayment = url.searchParams.get('trxref') || url.searchParams.get('reference');
+              const isPending = memorial.status === 'inactive' && fromPayment;
+              return (
+                <div className={`inline-block px-3 py-1 rounded-full text-xs font-body mb-4 ${
+                  memorial.status === 'active' ? 'bg-sage/20 text-sage' :
+                  isPending ? 'bg-warm/20 text-warm animate-pulse' :
+                  memorial.status === 'community' ? 'bg-primary/20 text-primary' :
+                  'bg-accent text-accent-foreground'
+                }`}>
+                  {memorial.status === 'active' ? '🟢 Active Memory Page' :
+                   isPending ? '⏳ Activating... Payment being confirmed' :
+                   memorial.status === 'community' ? '🔵 Community Page' :
+                   '⚪ Page Not Yet Activated'}
+                </div>
+              );
+            })()}
             <h1 className="font-display text-4xl font-bold text-foreground mb-1">{memorial.full_name}</h1>
             <p className="text-muted-foreground font-body">{memorial.birth_year} – {memorial.death_year}</p>
             <p className="text-sm text-muted-foreground font-body mt-1 capitalize">{getRelationshipDisplay()}</p>
