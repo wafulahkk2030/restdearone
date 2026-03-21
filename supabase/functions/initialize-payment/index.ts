@@ -54,6 +54,7 @@ Deno.serve(async (req: Request) => {
         amount: 100,
         currency: "KES",
         status: "pending",
+        payment_reference: customReference,
       });
 
     } else if (type === "memorial_creation") {
