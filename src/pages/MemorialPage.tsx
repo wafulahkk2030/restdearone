@@ -50,6 +50,33 @@ const MemorialPage = () => {
   const isActive = memorial?.status === 'active';
   const isOwner = user?.id === memorial?.created_by;
 
+  // Poll for status update after returning from payment
+  useEffect(() => {
+    if (!id || !memorial || memorial.status !== 'inactive') return;
+    const url = new URL(window.location.href);
+    const fromPayment = url.searchParams.get('trxref') || url.searchParams.get('reference');
+    if (!fromPayment) return;
+
+    let attempts = 0;
+    const maxAttempts = 15;
+    const interval = setInterval(async () => {
+      attempts++;
+      const { data } = await supabase.from("memorial_pages").select("status, activation_expiry").eq("id", id).single();
+      if (data?.status === 'active') {
+        setMemorial((prev: any) => ({ ...prev, status: 'active', activation_expiry: data.activation_expiry }));
+        clearInterval(interval);
+        toast({ title: "🎉 Page Activated!", description: "Your memorial page is now active for 1 year." });
+        // Clean URL
+        url.searchParams.delete('trxref');
+        url.searchParams.delete('reference');
+        window.history.replaceState({}, '', url.pathname);
+      }
+      if (attempts >= maxAttempts) clearInterval(interval);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [id, memorial?.status]);
+
   const activateMemorial = async () => {
     if (!user) { toast({ title: "Please sign in first", variant: "destructive" }); return; }
     setActivating(true);
