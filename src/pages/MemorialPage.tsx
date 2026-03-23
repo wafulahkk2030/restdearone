@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2 } from "lucide-react";
+import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2, Shield, Save } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 import FlowerTributeDialog from "@/components/memorial/FlowerTributeDialog";
 import TributeGarden from "@/components/memorial/TributeGarden";
@@ -29,7 +29,7 @@ const reactionTypes = [
 
 const MemorialPage = () => {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [memorial, setMemorial] = useState<any>(null);
   const [stories, setStories] = useState<any[]>([]);
@@ -46,6 +46,11 @@ const MemorialPage = () => {
   const [activating, setActivating] = useState(false);
   const [showFlowerDialog, setShowFlowerDialog] = useState(false);
   const [storyPaymentInfo, setStoryPaymentInfo] = useState<{ required: boolean; amount: number; freeRemaining: number } | null>(null);
+  const [editingMemorial, setEditingMemorial] = useState(false);
+  const [memorialEditForm, setMemorialEditForm] = useState({
+    full_name: "", personality_summary: "", common_phrase: "", life_lesson: "",
+    unforgettable_moment: "", what_to_remember: "", relationship_to_creator: "",
+  });
 
   const isActive = memorial?.status === 'active';
   const isOwner = user?.id === memorial?.created_by;
@@ -66,7 +71,6 @@ const MemorialPage = () => {
         setMemorial((prev: any) => ({ ...prev, status: 'active', activation_expiry: data.activation_expiry }));
         clearInterval(interval);
         toast({ title: "🎉 Page Activated!", description: "Your memorial page is now active for 1 year." });
-        // Clean URL
         url.searchParams.delete('trxref');
         url.searchParams.delete('reference');
         window.history.replaceState({}, '', url.pathname);
@@ -96,9 +100,29 @@ const MemorialPage = () => {
     setActivating(false);
   };
 
-  // Check story posting limits for current user
+  // Admin: activate page without payment
+  const adminActivate = async () => {
+    if (!isAdmin) return;
+    const expiry = new Date();
+    expiry.setFullYear(expiry.getFullYear() + 1);
+    const { error } = await supabase.from("memorial_pages").update({
+      status: "active" as any,
+      activation_expiry: expiry.toISOString(),
+    }).eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setMemorial((prev: any) => ({ ...prev, status: 'active', activation_expiry: expiry.toISOString() }));
+      toast({ title: "✅ Page activated by admin" });
+    }
+  };
+
   const checkStoryLimits = async () => {
     if (!user || !id) return;
+    if (isAdmin) {
+      setStoryPaymentInfo({ required: false, amount: 0, freeRemaining: 999 });
+      return;
+    }
     const { count } = await supabase.from("stories").select("id", { count: "exact", head: true })
       .eq("author_id", user.id).eq("memorial_id", id);
     const storyCount = count || 0;
@@ -115,13 +139,8 @@ const MemorialPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (id) loadAll();
-  }, [id]);
-
-  useEffect(() => {
-    if (user && id) checkStoryLimits();
-  }, [user, id, stories.length]);
+  useEffect(() => { if (id) loadAll(); }, [id]);
+  useEffect(() => { if (user && id) checkStoryLimits(); }, [user, id, stories.length]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -169,13 +188,11 @@ const MemorialPage = () => {
 
   const handleWriteStory = async () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
-    if (!isActive) { toast({ title: "This memorial page must be activated first", variant: "destructive" }); return; }
+    if (!isActive && !isAdmin) { toast({ title: "This memorial page must be activated first", variant: "destructive" }); return; }
 
-    // Re-check story limits
     await checkStoryLimits();
 
-    if (storyPaymentInfo?.required) {
-      // Redirect to payment
+    if (storyPaymentInfo?.required && !isAdmin) {
       try {
         const { data, error } = await supabase.functions.invoke("initialize-payment", {
           body: { type: "story_posting", memorial_id: id },
@@ -196,11 +213,10 @@ const MemorialPage = () => {
 
   const submitStory = async () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
-    if (!isActive) { toast({ title: "This memorial page must be activated before posting stories", variant: "destructive" }); return; }
+    if (!isActive && !isAdmin) { toast({ title: "This memorial page must be activated before posting stories", variant: "destructive" }); return; }
     if (!storyForm.title || !storyForm.content) { toast({ title: "Title and content required", variant: "destructive" }); return; }
 
-    // Server-side will also validate, but double-check client-side
-    if (storyPaymentInfo?.required) {
+    if (storyPaymentInfo?.required && !isAdmin) {
       toast({ title: "Payment required", description: `You need to pay KES ${storyPaymentInfo.amount} to post this story.`, variant: "destructive" });
       return;
     }
@@ -273,17 +289,49 @@ const MemorialPage = () => {
     toast({ title: "Reported", description: "Thank you. Our team will review this." });
   };
 
-  // Format relationship display - handle "other" properly
   const getRelationshipDisplay = () => {
     const rel = memorial?.relationship_to_creator;
     if (!rel) return "";
-    // Common relationships get "their X" treatment
     const standardRels = ["father", "mother", "brother", "sister", "friend", "colleague", "teacher", "partner", "mentor", "spouse"];
     if (standardRels.includes(rel)) {
       return `Remembered by their ${rel}`;
     }
-    // Custom relationship (from "Other" option) - display as-is
     return `Remembered by ${rel}`;
+  };
+
+  // Memorial editing
+  const startMemorialEdit = () => {
+    setMemorialEditForm({
+      full_name: memorial.full_name || "",
+      personality_summary: memorial.personality_summary || "",
+      common_phrase: memorial.common_phrase || "",
+      life_lesson: memorial.life_lesson || "",
+      unforgettable_moment: memorial.unforgettable_moment || "",
+      what_to_remember: memorial.what_to_remember || "",
+      relationship_to_creator: memorial.relationship_to_creator || "",
+    });
+    setEditingMemorial(true);
+  };
+
+  const saveMemorialEdit = async () => {
+    setSubmitting(true);
+    const { error } = await supabase.from("memorial_pages").update({
+      full_name: memorialEditForm.full_name,
+      personality_summary: memorialEditForm.personality_summary || null,
+      common_phrase: memorialEditForm.common_phrase || null,
+      life_lesson: memorialEditForm.life_lesson || null,
+      unforgettable_moment: memorialEditForm.unforgettable_moment || null,
+      what_to_remember: memorialEditForm.what_to_remember || null,
+      relationship_to_creator: memorialEditForm.relationship_to_creator,
+    }).eq("id", id);
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Memorial updated!" });
+      setEditingMemorial(false);
+      loadAll();
+    }
   };
 
   if (loading) return (
@@ -311,7 +359,8 @@ const MemorialPage = () => {
         <div className="max-w-3xl mx-auto">
           {/* Header */}
           <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {(() => {
+            {/* Status badge - only visible to owner/admin */}
+            {(isOwner || isAdmin) && (() => {
               const url = new URL(window.location.href);
               const fromPayment = url.searchParams.get('trxref') || url.searchParams.get('reference');
               const isPending = memorial.status === 'inactive' && fromPayment;
@@ -329,25 +378,76 @@ const MemorialPage = () => {
                 </div>
               );
             })()}
-            <h1 className="font-display text-4xl font-bold text-foreground mb-1">{memorial.full_name}</h1>
-            <p className="text-muted-foreground font-body">{memorial.birth_year} – {memorial.death_year}</p>
-            <p className="text-sm text-muted-foreground font-body mt-1 capitalize">{getRelationshipDisplay()}</p>
 
-            <div className="flex items-center justify-center gap-6 mt-4">
-              <span className="text-xs text-muted-foreground font-body">{stories.length} {stories.length === 1 ? 'story' : 'stories'}</span>
-              <span className="text-xs text-muted-foreground font-body">{followers} followers</span>
-            </div>
+            {/* Memorial edit mode */}
+            {editingMemorial ? (
+              <div className="space-y-4 text-left mb-6">
+                <div>
+                  <label className="text-xs font-body text-muted-foreground">Full Name</label>
+                  <Input value={memorialEditForm.full_name} onChange={e => setMemorialEditForm(f => ({ ...f, full_name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-body text-muted-foreground">Relationship (e.g. "their uncle John")</label>
+                  <Input value={memorialEditForm.relationship_to_creator} onChange={e => setMemorialEditForm(f => ({ ...f, relationship_to_creator: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-body text-muted-foreground">Personality</label>
+                  <Textarea value={memorialEditForm.personality_summary} onChange={e => setMemorialEditForm(f => ({ ...f, personality_summary: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-body text-muted-foreground">They Used to Say</label>
+                  <Input value={memorialEditForm.common_phrase} onChange={e => setMemorialEditForm(f => ({ ...f, common_phrase: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-body text-muted-foreground">Life Lesson</label>
+                  <Textarea value={memorialEditForm.life_lesson} onChange={e => setMemorialEditForm(f => ({ ...f, life_lesson: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-body text-muted-foreground">Unforgettable Moment</label>
+                  <Textarea value={memorialEditForm.unforgettable_moment} onChange={e => setMemorialEditForm(f => ({ ...f, unforgettable_moment: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-body text-muted-foreground">What to Remember</label>
+                  <Textarea value={memorialEditForm.what_to_remember} onChange={e => setMemorialEditForm(f => ({ ...f, what_to_remember: e.target.value }))} />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => setEditingMemorial(false)}>Cancel</Button>
+                  <Button variant="hero" size="sm" onClick={saveMemorialEdit} disabled={submitting} className="gap-1">
+                    <Save className="w-4 h-4" /> {submitting ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h1 className="font-display text-4xl font-bold text-foreground mb-1">{memorial.full_name}</h1>
+                <p className="text-muted-foreground font-body">{memorial.birth_year} – {memorial.death_year}</p>
+                <p className="text-sm text-muted-foreground font-body mt-1 capitalize">{getRelationshipDisplay()}</p>
+
+                <div className="flex items-center justify-center gap-6 mt-4">
+                  <span className="text-xs text-muted-foreground font-body">{stories.length} {stories.length === 1 ? 'story' : 'stories'}</span>
+                  <span className="text-xs text-muted-foreground font-body">{followers} followers</span>
+                </div>
+              </>
+            )}
 
             <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
               <Button variant={isFollowing ? "outline" : "warm"} size="sm" onClick={toggleFollow} className="gap-1">
                 <Users className="w-4 h-4" />
                 {isFollowing ? "Following" : "Follow"}
               </Button>
-              {isActive ? (
+
+              {/* Edit button for owner/admin */}
+              {(isOwner || isAdmin) && !editingMemorial && (
+                <Button variant="outline" size="sm" onClick={startMemorialEdit} className="gap-1">
+                  <Edit className="w-4 h-4" /> Edit Page
+                </Button>
+              )}
+
+              {isActive || isAdmin ? (
                 <>
                   <Button variant="hero" size="sm" onClick={handleWriteStory} className="gap-1">
                     <PenLine className="w-4 h-4" />
-                    {storyPaymentInfo?.required ? `Write Story — KES ${storyPaymentInfo.amount}` : "Write a Story"}
+                    {storyPaymentInfo?.required && !isAdmin ? `Write Story — KES ${storyPaymentInfo.amount}` : "Write a Story"}
                   </Button>
                   <Button variant="sage" size="sm" onClick={() => setShowFlowerDialog(true)} className="gap-1">
                     <Flower2 className="w-4 h-4" />
@@ -365,22 +465,32 @@ const MemorialPage = () => {
                     </Button>
                   );
                 }
+                // Only owner sees activate button; visitors don't see inactive status at all
                 return isOwner ? (
-                  <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
-                    <CreditCard className="w-4 h-4" />
-                    {activating ? "Processing..." : "Activate Page — KES 100/year"}
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" disabled className="gap-1 opacity-60">
-                    <Lock className="w-4 h-4" />
-                    Page Not Active
-                  </Button>
-                );
+                  <>
+                    <Button variant="hero" size="sm" onClick={activateMemorial} disabled={activating} className="gap-1">
+                      <CreditCard className="w-4 h-4" />
+                      {activating ? "Processing..." : "Activate Page — KES 100/year"}
+                    </Button>
+                    {isAdmin && (
+                      <Button variant="outline" size="sm" onClick={adminActivate} className="gap-1">
+                        <Shield className="w-4 h-4" /> Admin Activate (Free)
+                      </Button>
+                    )}
+                  </>
+                ) : null;
               })()}
+
+              {/* Admin activate for non-owner admin */}
+              {!isActive && isAdmin && !isOwner && (
+                <Button variant="outline" size="sm" onClick={adminActivate} className="gap-1">
+                  <Shield className="w-4 h-4" /> Admin Activate (Free)
+                </Button>
+              )}
             </div>
 
             {/* Story payment info */}
-            {isActive && storyPaymentInfo && user && (
+            {isActive && storyPaymentInfo && user && !isAdmin && (
               <div className="mt-3 text-xs text-muted-foreground font-body">
                 {storyPaymentInfo.required ? (
                   <span className="text-warm">⚠️ Your next story requires a payment of KES {storyPaymentInfo.amount}. After payment, you get 2 free stories.</span>
@@ -392,32 +502,40 @@ const MemorialPage = () => {
           </motion.div>
 
           {/* About section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-            {memorial.personality_summary && (
-              <div className="bg-card border border-border rounded-xl p-5">
-                <h3 className="font-display text-sm font-semibold text-foreground mb-2">Personality</h3>
-                <p className="text-sm text-foreground/80 font-body leading-relaxed">{memorial.personality_summary}</p>
-              </div>
-            )}
-            {memorial.common_phrase && (
-              <div className="bg-card border border-border rounded-xl p-5">
-                <h3 className="font-display text-sm font-semibold text-foreground mb-2">They Used to Say</h3>
-                <p className="text-sm text-foreground/80 font-body italic">"{memorial.common_phrase}"</p>
-              </div>
-            )}
-            {memorial.life_lesson && (
-              <div className="bg-card border border-border rounded-xl p-5">
-                <h3 className="font-display text-sm font-semibold text-foreground mb-2">The Last Lesson</h3>
-                <p className="text-sm text-foreground/80 font-body leading-relaxed">{memorial.life_lesson}</p>
-              </div>
-            )}
-            {memorial.unforgettable_moment && (
-              <div className="bg-card border border-border rounded-xl p-5">
-                <h3 className="font-display text-sm font-semibold text-foreground mb-2">Unforgettable Moment</h3>
-                <p className="text-sm text-foreground/80 font-body leading-relaxed">{memorial.unforgettable_moment}</p>
-              </div>
-            )}
-          </div>
+          {!editingMemorial && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+              {memorial.personality_summary && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-display text-sm font-semibold text-foreground mb-2">Personality</h3>
+                  <p className="text-sm text-foreground/80 font-body leading-relaxed">{memorial.personality_summary}</p>
+                </div>
+              )}
+              {memorial.common_phrase && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-display text-sm font-semibold text-foreground mb-2">They Used to Say</h3>
+                  <p className="text-sm text-foreground/80 font-body italic">"{memorial.common_phrase}"</p>
+                </div>
+              )}
+              {memorial.life_lesson && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-display text-sm font-semibold text-foreground mb-2">The Last Lesson</h3>
+                  <p className="text-sm text-foreground/80 font-body leading-relaxed">{memorial.life_lesson}</p>
+                </div>
+              )}
+              {memorial.unforgettable_moment && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-display text-sm font-semibold text-foreground mb-2">Unforgettable Moment</h3>
+                  <p className="text-sm text-foreground/80 font-body leading-relaxed">{memorial.unforgettable_moment}</p>
+                </div>
+              )}
+              {memorial.what_to_remember && (
+                <div className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-display text-sm font-semibold text-foreground mb-2">What to Remember</h3>
+                  <p className="text-sm text-foreground/80 font-body leading-relaxed">{memorial.what_to_remember}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Tribute Garden */}
           <TributeGarden memorialId={id!} />
@@ -487,7 +605,7 @@ const MemorialPage = () => {
                 const typeInfo = storyTypeLabels[story.story_type] || storyTypeLabels.memory;
                 const Icon = typeInfo.icon;
                 const storyReactions = reactions[story.id] || [];
-                const isEditing = editingStory === story.id;
+                const isEditingThis = editingStory === story.id;
                 const canEdit = user?.id === story.author_id && (story.edit_count || 0) < 2;
 
                 return (
@@ -504,7 +622,7 @@ const MemorialPage = () => {
                         <span className="text-xs font-body font-medium bg-accent text-accent-foreground px-2 py-0.5 rounded-md">{typeInfo.label}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {canEdit && !isEditing && (
+                        {canEdit && !isEditingThis && (
                           <button onClick={() => startEdit(story)} className="text-xs text-muted-foreground hover:text-primary font-body flex items-center gap-1">
                             <Edit className="w-3 h-3" /> Edit ({2 - (story.edit_count || 0)} left)
                           </button>
@@ -520,7 +638,7 @@ const MemorialPage = () => {
                       </div>
                     </div>
 
-                    {isEditing ? (
+                    {isEditingThis ? (
                       <div className="space-y-3">
                         <Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
                         <Textarea value={editForm.content} onChange={e => setEditForm(f => ({ ...f, content: e.target.value }))} className="min-h-[100px]" />
@@ -541,7 +659,6 @@ const MemorialPage = () => {
                             — {story.profiles?.display_name || story.profiles?.username || "Anonymous"} · {new Date(story.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        {/* Reactions */}
                         <div className="flex flex-wrap gap-2 mt-3">
                           {reactionTypes.map(rt => {
                             const count = storyReactions.filter(r => r.reaction_type === rt.type).length;
@@ -572,7 +689,6 @@ const MemorialPage = () => {
       </div>
       <Footer />
 
-      {/* Flower Tribute Dialog */}
       <FlowerTributeDialog
         open={showFlowerDialog}
         onOpenChange={setShowFlowerDialog}
