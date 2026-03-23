@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, PenLine, BookOpen, Crown, ArrowRight, Heart, Shield } from "lucide-react";
+import { Users, PenLine, BookOpen, Crown, ArrowRight, Heart, Shield, Lock } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 
 const onboardingQuestions = [
@@ -46,22 +46,36 @@ const CommunityPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
 
+  const isMember = !!membership || isAdmin;
+
   useEffect(() => { if (id) loadAll(); }, [id, user]);
 
   const loadAll = async () => {
     setLoading(true);
-    const [comRes, storiesRes, membersRes] = await Promise.all([
+    const [comRes, membersRes] = await Promise.all([
       supabase.from("community_groups").select("*").eq("id", id).single(),
-      supabase.from("community_stories").select("*, profiles:author_id(display_name, username, country)").eq("community_id", id).order("created_at", { ascending: false }).limit(50),
       supabase.from("community_members").select("*, profiles:user_id(display_name, username, country, avatar_url)").eq("community_id", id),
     ]);
     setCommunity(comRes.data);
-    setStories(storiesRes.data || []);
     setMembers(membersRes.data || []);
 
+    let mem = null;
     if (user) {
-      const mem = (membersRes.data || []).find((m: any) => m.user_id === user.id);
+      mem = (membersRes.data || []).find((m: any) => m.user_id === user.id);
       setMembership(mem || null);
+    }
+
+    // Only load stories if member or admin
+    if (mem || isAdmin) {
+      const { data: storiesData } = await supabase
+        .from("community_stories")
+        .select("*, profiles:author_id(display_name, username, country)")
+        .eq("community_id", id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      setStories(storiesData || []);
+    } else {
+      setStories([]);
     }
     setLoading(false);
   };
@@ -72,6 +86,7 @@ const CommunityPage = () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); navigate("/login"); return; }
     setShowOnboarding(true);
     setOnboardingStep(0);
+    setOnboardingAnswers({});
   };
 
   const selectAnswer = (stepIdx: number, answer: string) => {
@@ -94,16 +109,20 @@ const CommunityPage = () => {
       onboarding_answers: onboardingAnswers,
     });
     if (error) {
-      toast({ title: "Error joining", description: error.message, variant: "destructive" });
+      if (error.message.includes("duplicate")) {
+        toast({ title: "You're already a member!", description: "Refreshing..." });
+      } else {
+        toast({ title: "Error joining", description: error.message, variant: "destructive" });
+        return;
+      }
     } else {
-      // Track activity
       supabase.functions.invoke("ai-tracking", {
         body: { action: "track_activity", data: { user_id: user.id, event_type: "community_joined", metadata: { community_id: id } } },
       });
       toast({ title: "Welcome!", description: "You've joined the community." });
-      setShowOnboarding(false);
-      loadAll();
     }
+    setShowOnboarding(false);
+    loadAll();
   };
 
   const submitStory = async () => {
@@ -121,12 +140,6 @@ const CommunityPage = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      supabase.functions.invoke("ai-tracking", {
-        body: { action: "moderate_content", data: { content: storyForm.content, content_type: "community_story", content_id: id } },
-      });
-      supabase.functions.invoke("ai-tracking", {
-        body: { action: "track_activity", data: { user_id: user.id, event_type: "community_story_posted", metadata: { community_id: id } } },
-      });
       toast({ title: "Story shared!" });
       setStoryForm({ title: "", content: "", story_type: "memory" });
       setShowStoryForm(false);
@@ -149,7 +162,7 @@ const CommunityPage = () => {
     <div className="min-h-screen bg-background"><Navbar /><div className="pt-24 flex items-center justify-center"><p className="text-muted-foreground font-body">Community not found.</p></div></div>
   );
 
-  // Full-screen onboarding flow (Duolingo-style)
+  // Full-screen onboarding flow
   if (showOnboarding) {
     const isAffirmation = onboardingStep >= onboardingQuestions.length;
     return (
@@ -218,11 +231,11 @@ const CommunityPage = () => {
             {community.description && <p className="text-muted-foreground font-body max-w-lg mx-auto mb-4">{community.description}</p>}
             <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground font-body">
               <span>{members.length} members</span>
-              <span>{stories.length} stories</span>
+              {isMember && <span>{stories.length} stories</span>}
             </div>
 
             <div className="flex items-center justify-center gap-3 mt-4">
-              {!membership && !isAdmin ? (
+              {!isMember ? (
                 <Button variant="hero" onClick={handleJoin} className="gap-1">
                   <Users className="w-4 h-4" /> Join Community
                 </Button>
@@ -264,7 +277,7 @@ const CommunityPage = () => {
           )}
 
           {/* Story form */}
-          {showStoryForm && (membership || isAdmin) && (
+          {showStoryForm && isMember && (
             <motion.div className="bg-card border border-border rounded-xl p-6 mb-8" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
               <h3 className="font-display text-lg font-semibold text-foreground mb-4">Share a Story</h3>
               <div className="space-y-4">
@@ -278,10 +291,18 @@ const CommunityPage = () => {
             </motion.div>
           )}
 
-          {/* Stories */}
+          {/* Stories - gated for members only */}
           <div className="space-y-4">
             <h3 className="font-display text-xl font-semibold text-foreground">Community Stories</h3>
-            {stories.length === 0 ? (
+            {!isMember ? (
+              <div className="text-center py-12 bg-card border border-border rounded-xl">
+                <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground font-body mb-2">Join this community to read and share stories.</p>
+                <Button variant="hero" size="sm" onClick={handleJoin} className="gap-1">
+                  <Users className="w-4 h-4" /> Join Community
+                </Button>
+              </div>
+            ) : stories.length === 0 ? (
               <div className="text-center py-12 bg-card border border-border rounded-xl">
                 <p className="text-muted-foreground font-body">No stories yet. Be the first to share.</p>
               </div>

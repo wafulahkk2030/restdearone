@@ -5,15 +5,17 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare } from "lucide-react";
+import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare, Bell, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import AdminOverview from "@/components/admin/AdminOverview";
 import AdminCommunities from "@/components/admin/AdminCommunities";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminPayments from "@/components/admin/AdminPayments";
 
-type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "logs";
+type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "logs" | "notifications";
 
 const Admin = () => {
   const { user, isAdmin, adminRole, loading: authLoading } = useAuth();
@@ -25,6 +27,17 @@ const Admin = () => {
   const [memorials, setMemorials] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Notification state
+  const [notifUserId, setNotifUserId] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
+  const [notifLink, setNotifLink] = useState("");
+  const [sendingNotif, setSendingNotif] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+
+  // Incomplete communities
+  const [inactiveCommunities, setInactiveCommunities] = useState<any[]>([]);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) navigate("/");
@@ -65,6 +78,14 @@ const Admin = () => {
       const { data } = await supabase.from("admin_activity_logs").select("*").order("created_at", { ascending: false }).limit(50);
       setLogs(data || []);
     }
+    if (tab === "notifications") {
+      const { data } = await supabase.from("profiles").select("id, display_name, username, email").order("created_at", { ascending: false }).limit(500);
+      setAllUsers(data || []);
+    }
+    if (tab === "communities") {
+      const { data } = await supabase.from("community_groups").select("*, profiles:created_by(display_name, username, email)").eq("is_active", false).order("created_at", { ascending: false }).limit(50);
+      setInactiveCommunities(data || []);
+    }
     setLoading(false);
   };
 
@@ -82,12 +103,12 @@ const Admin = () => {
 
   const deleteMemorial = async (memorialId: string, name: string) => {
     if (!confirm(`Are you sure you want to delete "${name}"? This removes all stories, followers, and payments. Cannot be undone.`)) return;
-    // Clean up related data
     await Promise.all([
       supabase.from("stories").delete().eq("memorial_id", memorialId),
       supabase.from("memorial_followers").delete().eq("memorial_id", memorialId),
       supabase.from("payments").delete().eq("memorial_id", memorialId),
       supabase.from("memory_keywords").delete().eq("memorial_id", memorialId),
+      supabase.from("flower_tributes").delete().eq("memorial_id", memorialId),
     ]);
     await supabase.from("memorial_pages").delete().eq("id", memorialId);
     await supabase.from("admin_activity_logs").insert({
@@ -101,6 +122,51 @@ const Admin = () => {
     loadData();
   };
 
+  const adminActivateMemorial = async (memorialId: string) => {
+    const expiry = new Date();
+    expiry.setFullYear(expiry.getFullYear() + 1);
+    await supabase.from("memorial_pages").update({
+      status: "active" as any,
+      activation_expiry: expiry.toISOString(),
+    }).eq("id", memorialId);
+    await supabase.from("admin_activity_logs").insert({
+      admin_id: user!.id,
+      action: "admin_activate_memorial",
+      target_type: "memorial_page",
+      target_id: memorialId,
+    });
+    toast({ title: "Memorial activated for 1 year" });
+    loadData();
+  };
+
+  const sendNotification = async () => {
+    if (!notifUserId || !notifMessage) {
+      toast({ title: "User and message required", variant: "destructive" });
+      return;
+    }
+    setSendingNotif(true);
+    const { error } = await supabase.from("notifications").insert({
+      user_id: notifUserId,
+      message: notifMessage,
+      link: notifLink || null,
+    });
+    setSendingNotif(false);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Notification sent!" });
+      setNotifMessage("");
+      setNotifLink("");
+      await supabase.from("admin_activity_logs").insert({
+        admin_id: user!.id,
+        action: "send_notification",
+        target_type: "user",
+        target_id: notifUserId,
+        details: { message: notifMessage },
+      });
+    }
+  };
+
   if (authLoading || !isAdmin) return null;
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
@@ -110,8 +176,17 @@ const Admin = () => {
     { key: "communities", label: "Communities", icon: MessageSquare },
     { key: "users", label: "Users", icon: Users },
     { key: "payments", label: "Payments", icon: CreditCard },
+    { key: "notifications", label: "Send Notification", icon: Bell },
     { key: "logs", label: "Activity Logs", icon: Settings },
   ];
+
+  const filteredUsers = userSearch
+    ? allUsers.filter(u =>
+        (u.display_name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
+        (u.username || "").toLowerCase().includes(userSearch.toLowerCase()) ||
+        (u.email || "").toLowerCase().includes(userSearch.toLowerCase())
+      )
+    : allUsers;
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,12 +220,70 @@ const Admin = () => {
           </div>
 
           {tab === "overview" && <AdminOverview stats={stats} />}
-
-          {tab === "communities" && <AdminCommunities userId={user!.id} adminRole={adminRole} />}
-
+          {tab === "communities" && (
+            <div className="space-y-6">
+              <AdminCommunities userId={user!.id} adminRole={adminRole} />
+              {/* Incomplete communities */}
+              {inactiveCommunities.length > 0 && (
+                <div>
+                  <h3 className="font-display text-lg font-semibold text-foreground mb-4">⚠️ Incomplete Communities (Not Paid)</h3>
+                  <div className="space-y-3">
+                    {inactiveCommunities.map(c => (
+                      <div key={c.id} className="bg-card border border-border rounded-xl p-5 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-display text-base font-semibold text-foreground">{c.name}</h4>
+                          <p className="text-xs text-muted-foreground font-body">
+                            Created by: {c.profiles?.display_name || c.profiles?.username || c.profiles?.email || "Unknown"} · {new Date(c.created_at).toLocaleDateString()}
+                          </p>
+                          <span className="text-xs bg-warm/20 text-warm px-2 py-0.5 rounded-full font-body">Payment Incomplete</span>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/community/${c.id}`)}>View</Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {tab === "users" && <AdminUsers userId={user!.id} adminRole={adminRole} />}
-
           {tab === "payments" && <AdminPayments />}
+
+          {tab === "notifications" && (
+            <div className="max-w-lg mx-auto space-y-4">
+              <h3 className="font-display text-lg font-semibold text-foreground">Send In-App Notification</h3>
+              <div>
+                <label className="text-xs font-body text-muted-foreground">Search User</label>
+                <Input placeholder="Search by name, username, or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="mt-1" />
+              </div>
+              {userSearch && (
+                <div className="max-h-40 overflow-y-auto border border-border rounded-lg">
+                  {filteredUsers.slice(0, 20).map(u => (
+                    <button
+                      key={u.id}
+                      onClick={() => { setNotifUserId(u.id); setUserSearch(u.display_name || u.username || u.email || ""); }}
+                      className={`w-full text-left px-3 py-2 text-sm font-body hover:bg-accent transition-colors ${notifUserId === u.id ? "bg-primary/10" : ""}`}
+                    >
+                      {u.display_name || u.username} <span className="text-muted-foreground">({u.email})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {notifUserId && (
+                <p className="text-xs text-muted-foreground font-body">Selected: {notifUserId.slice(0, 8)}...</p>
+              )}
+              <div>
+                <label className="text-xs font-body text-muted-foreground">Message</label>
+                <Textarea placeholder="Type your notification message..." value={notifMessage} onChange={e => setNotifMessage(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <label className="text-xs font-body text-muted-foreground">Link (optional)</label>
+                <Input placeholder="/memorial/... or /community/..." value={notifLink} onChange={e => setNotifLink(e.target.value)} className="mt-1" />
+              </div>
+              <Button variant="hero" onClick={sendNotification} disabled={sendingNotif} className="gap-1">
+                <Send className="w-4 h-4" /> {sendingNotif ? "Sending..." : "Send Notification"}
+              </Button>
+            </div>
+          )}
 
           {tab === "reports" && (
             <div className="space-y-3">
@@ -191,6 +324,9 @@ const Admin = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => navigate(`/memorial/${m.id}`)}>View</Button>
+                    {m.status !== 'active' && (
+                      <Button size="sm" variant="sage" onClick={() => adminActivateMemorial(m.id)}>Activate</Button>
+                    )}
                     {(adminRole === 'super_admin' || adminRole === 'platform_admin') && (
                       <Button size="sm" variant="destructive" onClick={() => deleteMemorial(m.id, m.full_name)}>Delete</Button>
                     )}
