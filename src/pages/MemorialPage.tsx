@@ -190,21 +190,29 @@ const MemorialPage = () => {
     if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
     if (!isActive && !isAdmin) { toast({ title: "This memorial page must be activated first", variant: "destructive" }); return; }
 
-    await checkStoryLimits();
+    // Check story limits directly (don't rely on stale state)
+    if (!isAdmin) {
+      const { count } = await supabase.from("stories").select("id", { count: "exact", head: true })
+        .eq("author_id", user.id).eq("memorial_id", id);
+      const storyCount = count || 0;
+      const positionInGroup = storyCount % 3;
+      const groupNumber = Math.floor(storyCount / 3);
 
-    if (storyPaymentInfo?.required && !isAdmin) {
-      try {
-        const { data, error } = await supabase.functions.invoke("initialize-payment", {
-          body: { type: "story_posting", memorial_id: id },
-        });
-        if (error) throw error;
-        if (data?.authorization_url) {
-          window.location.href = data.authorization_url;
+      if (positionInGroup === 2) {
+        const amount = 250 + (groupNumber * 250);
+        try {
+          const { data, error } = await supabase.functions.invoke("initialize-payment", {
+            body: { type: "story_posting", memorial_id: id },
+          });
+          if (error) throw error;
+          if (data?.authorization_url) {
+            window.location.href = data.authorization_url;
+            return;
+          }
+        } catch (err: any) {
+          toast({ title: "Payment error", description: err.message, variant: "destructive" });
           return;
         }
-      } catch (err: any) {
-        toast({ title: "Payment error", description: err.message, variant: "destructive" });
-        return;
       }
     }
 
