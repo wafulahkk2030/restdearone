@@ -59,3 +59,12 @@ verify_jwt = false
 
 [functions.send-flower-tribute]
 verify_jwt = false
+
+[functions.fundraising-engine]
+verify_jwt = false
+
+[functions.fundraiser-payout-manager]
+verify_jwt = false
+
+[functions.memory-chat-engine]
+verify_jwt = false
