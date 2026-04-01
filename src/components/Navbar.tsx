@@ -56,6 +56,11 @@ const Navbar = () => {
                   </button>
                 </Link>
               )}
+              <Link to="/profile">
+                <button className="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-body font-medium text-foreground hover:bg-accent transition-colors">
+                  Profile
+                </button>
+              </Link>
               <Link to="/dashboard">
                 <button className="inline-flex items-center justify-center h-9 px-4 rounded-lg text-sm font-body font-medium text-foreground hover:bg-accent transition-colors">
                   Dashboard
