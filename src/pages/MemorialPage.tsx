@@ -280,10 +280,23 @@ const MemorialPage = () => {
     const existing = (reactions[storyId] || []).find(r => r.user_id === user.id && r.reaction_type === reactionType);
     if (existing) {
       await supabase.from("story_reactions").delete().eq("id", existing.id);
+      // Update state locally without reloading
+      setReactions(prev => ({
+        ...prev,
+        [storyId]: (prev[storyId] || []).filter(r => r.id !== existing.id),
+      }));
     } else {
-      await supabase.from("story_reactions").insert({ story_id: storyId, user_id: user.id, reaction_type: reactionType as any });
+      const { data: newReaction } = await supabase.from("story_reactions")
+        .insert({ story_id: storyId, user_id: user.id, reaction_type: reactionType as any })
+        .select()
+        .single();
+      if (newReaction) {
+        setReactions(prev => ({
+          ...prev,
+          [storyId]: [...(prev[storyId] || []), newReaction],
+        }));
+      }
     }
-    loadAll();
   };
 
   const reportContent = async (contentType: string, contentId: string, reason: string) => {
