@@ -45,20 +45,13 @@ Deno.serve(async (req: Request) => {
     );
 
     if (metadata.type === "memorial") {
-      // Memorial page activation payment
-      await supabase.from("payments").update({
-        status: "completed",
-      }).eq("payment_reference", reference).eq("status", "pending");
-
-      // Activate memorial page for 7 days
+      await supabase.from("payments").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
       const expiry = new Date();
       expiry.setFullYear(expiry.getFullYear() + 1);
-
       await supabase.from("memorial_pages").update({
         status: "active",
         activation_expiry: expiry.toISOString(),
       }).eq("id", metadata.memorial_id);
-
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
         message: "Your memorial page has been activated for 1 year!",
@@ -66,11 +59,7 @@ Deno.serve(async (req: Request) => {
       });
 
     } else if (metadata.type === "memorial_creation") {
-      // Payment for 3rd memorial creation
-      await supabase.from("payments").update({
-        status: "completed",
-      }).eq("payment_reference", reference).eq("status", "pending");
-
+      await supabase.from("payments").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
         message: "Your memorial page creation payment was successful! You can now activate the page.",
@@ -78,11 +67,7 @@ Deno.serve(async (req: Request) => {
       });
 
     } else if (metadata.type === "story_posting") {
-      // Payment for 3rd story posting
-      await supabase.from("payments").update({
-        status: "completed",
-      }).eq("payment_reference", reference).eq("status", "pending");
-
+      await supabase.from("payments").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
         message: "Your story posting payment was successful! You can now post your story.",
@@ -93,16 +78,11 @@ Deno.serve(async (req: Request) => {
       const cycle = metadata.billing_cycle || "monthly";
       const expiry = new Date();
       expiry.setDate(expiry.getDate() + (cycle === "yearly" ? 365 : 30));
-
       await supabase.from("community_payments").update({
         status: "completed",
         expires_at: expiry.toISOString(),
       }).eq("payment_reference", reference).eq("status", "pending");
-
-      await supabase.from("community_groups").update({
-        is_active: true,
-      }).eq("id", metadata.community_id);
-
+      await supabase.from("community_groups").update({ is_active: true }).eq("id", metadata.community_id);
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
         message: `Your community has been activated! (${cycle})`,
@@ -110,7 +90,6 @@ Deno.serve(async (req: Request) => {
       });
 
     } else if (metadata.type === "flower_tribute") {
-      // Mark tribute as completed
       await supabase.from("flower_tributes").update({
         status: "completed",
         payment_reference: reference,
@@ -119,7 +98,6 @@ Deno.serve(async (req: Request) => {
         .eq("flower_type", metadata.flower_type)
         .eq("status", "pending");
 
-      // Get memorial info for notification
       const { data: memorial } = await supabase.from("memorial_pages")
         .select("created_by, full_name").eq("id", metadata.memorial_id).single();
 
@@ -136,6 +114,72 @@ Deno.serve(async (req: Request) => {
           message: `${metadata.sender_name} shared a ${flowerName} with the memory of ${memorial.full_name}.`,
           link: `/memorial/${metadata.memorial_id}`,
         });
+
+        // Revenue sharing: if tribute is KES 5000+, memorial creator gets 65%
+        const flowerPrices: Record<string, number> = {
+          memory_daisy: 250, grace_lily: 500, golden_rose: 750,
+          eternal_orchid: 1000, heaven_blossom: 3000,
+          legacy_bouquet: 5000, celestial_garden: 10000,
+        };
+        const tributeAmount = flowerPrices[metadata.flower_type] || 0;
+        
+        if (tributeAmount >= 5000) {
+          const creatorShare = Math.round(tributeAmount * 0.65);
+          
+          // Notify memorial creator
+          await supabase.from("notifications").insert({
+            user_id: memorial.created_by,
+            message: `🎉 Great news! A ${flowerName} tribute (KES ${tributeAmount.toLocaleString()}) qualifies for revenue sharing. You will receive KES ${creatorShare.toLocaleString()} (65%) at the end of the month. Contributions now at KES ${tributeAmount.toLocaleString()}.`,
+            link: `/memorial/${metadata.memorial_id}`,
+          });
+
+          // Notify admins
+          const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
+          for (const admin of (admins || [])) {
+            await supabase.from("notifications").insert({
+              user_id: admin.user_id,
+              message: `💐 Revenue sharing triggered: Send KES ${creatorShare.toLocaleString()} to the creator of "${memorial.full_name}" memorial page at end of month. Tribute: ${flowerName} (KES ${tributeAmount.toLocaleString()}).`,
+              link: `/memorial/${metadata.memorial_id}`,
+            });
+          }
+        }
+      }
+
+    } else if (metadata.type === "fundraiser_contribution") {
+      // Prevent duplicate processing
+      const { data: contribution } = await supabase.from("contributions")
+        .select("*")
+        .eq("payment_reference", reference)
+        .single();
+
+      if (contribution && contribution.payment_status !== "success") {
+        // Verify amount matches
+        const paystackAmount = data.amount / 100;
+        if (paystackAmount !== contribution.gross_amount) {
+          console.error(`Amount mismatch: Paystack=${paystackAmount}, DB=${contribution.gross_amount}`);
+          return new Response("Amount mismatch", { status: 400 });
+        }
+
+        // Update contribution status
+        await supabase.from("contributions")
+          .update({ payment_status: "success" })
+          .eq("id", contribution.id);
+
+        // Atomic update fundraiser total
+        await supabase.rpc("increment_fundraiser_amount", {
+          fundraiser_id_input: contribution.fundraiser_id,
+          amount_input: contribution.net_amount,
+        });
+
+        // Notify admin
+        const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
+        for (const admin of (admins || [])) {
+          await supabase.from("notifications").insert({
+            user_id: admin.user_id,
+            message: `New fundraiser contribution: KES ${contribution.gross_amount.toLocaleString()} (Net: KES ${contribution.net_amount.toLocaleString()}, Fee: KES ${contribution.platform_fee.toLocaleString()})`,
+            link: `/fundraise/${contribution.fundraiser_id}`,
+          });
+        }
       }
     }
 
