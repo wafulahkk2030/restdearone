@@ -21,6 +21,12 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CommunityGuidelines from "./pages/CommunityGuidelines";
+import Fundraise from "./pages/Fundraise";
+import FundraiserPage from "./pages/FundraiserPage";
+import Chat from "./pages/Chat";
+import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +41,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/create-memorial" element={<CreateMemorial />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/discover" element={<Discover />} />
@@ -48,6 +56,10 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/guidelines" element={<CommunityGuidelines />} />
+            <Route path="/fundraise" element={<Fundraise />} />
+            <Route path="/fundraise/:id" element={<FundraiserPage />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

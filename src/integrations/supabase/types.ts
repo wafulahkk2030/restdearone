@@ -44,6 +44,121 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_members: {
+        Row: {
+          chat_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_members_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          is_flagged: boolean
+          message: string
+          message_type: string
+          sender_id: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          is_flagged?: boolean
+          message: string
+          message_type?: string
+          sender_id: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          is_flagged?: boolean
+          message?: string
+          message_type?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          chat_type: string
+          community_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          memorial_id: string | null
+          name: string | null
+        }
+        Insert: {
+          chat_type?: string
+          community_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          memorial_id?: string | null
+          name?: string | null
+        }
+        Update: {
+          chat_type?: string
+          community_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          memorial_id?: string | null
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chats_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_groups: {
         Row: {
           billing_cycle: string
@@ -274,6 +389,53 @@ export type Database = {
         }
         Relationships: []
       }
+      contributions: {
+        Row: {
+          created_at: string
+          donor_name: string | null
+          fundraiser_id: string
+          gross_amount: number
+          id: string
+          net_amount: number
+          payment_reference: string | null
+          payment_status: string
+          platform_fee: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          donor_name?: string | null
+          fundraiser_id: string
+          gross_amount: number
+          id?: string
+          net_amount: number
+          payment_reference?: string | null
+          payment_status?: string
+          platform_fee: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          donor_name?: string | null
+          fundraiser_id?: string
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          payment_reference?: string | null
+          payment_status?: string
+          platform_fee?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contributions_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "fundraisers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flower_tributes: {
         Row: {
           created_at: string
@@ -408,6 +570,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fundraisers: {
+        Row: {
+          created_at: string
+          created_by: string
+          current_amount: number
+          deadline: string
+          description: string | null
+          id: string
+          payout_account: string | null
+          payout_details: Json | null
+          payout_method: string | null
+          status: string
+          target_amount: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          current_amount?: number
+          deadline: string
+          description?: string | null
+          id?: string
+          payout_account?: string | null
+          payout_details?: Json | null
+          payout_method?: string | null
+          status?: string
+          target_amount: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_amount?: number
+          deadline?: string
+          description?: string | null
+          id?: string
+          payout_account?: string | null
+          payout_details?: Json | null
+          payout_method?: string | null
+          status?: string
+          target_amount?: number
+          title?: string
+        }
+        Relationships: []
       }
       invites: {
         Row: {
@@ -1028,6 +1235,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_fundraiser_amount: {
+        Args: { amount_input: number; fundraiser_id_input: string }
+        Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
