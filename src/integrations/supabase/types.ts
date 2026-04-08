@@ -356,6 +356,36 @@ export type Database = {
           },
         ]
       }
+      contact_submissions: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_read: boolean | null
+          message: string
+          name: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          name: string
+          subject: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          name?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       content_flags: {
         Row: {
           content_id: string
@@ -690,6 +720,44 @@ export type Database = {
           },
         ]
       }
+      memorial_journey_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          memorial_id: string
+          sort_order: number | null
+          title: string
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          memorial_id: string
+          sort_order?: number | null
+          title: string
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          memorial_id?: string
+          sort_order?: number | null
+          title?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memorial_journey_events_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memorial_pages: {
         Row: {
           activation_expiry: string | null
@@ -740,6 +808,85 @@ export type Database = {
           what_to_remember?: string | null
         }
         Relationships: []
+      }
+      memorial_photos: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          id: string
+          memorial_id: string
+          photo_url: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          memorial_id: string
+          photo_url: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          memorial_id?: string
+          photo_url?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memorial_photos_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memorial_service_info: {
+        Row: {
+          additional_notes: string | null
+          created_at: string | null
+          donation_info: string | null
+          id: string
+          memorial_id: string
+          service_date: string | null
+          service_time: string | null
+          venue_address: string | null
+          venue_name: string | null
+        }
+        Insert: {
+          additional_notes?: string | null
+          created_at?: string | null
+          donation_info?: string | null
+          id?: string
+          memorial_id: string
+          service_date?: string | null
+          service_time?: string | null
+          venue_address?: string | null
+          venue_name?: string | null
+        }
+        Update: {
+          additional_notes?: string | null
+          created_at?: string | null
+          donation_info?: string | null
+          id?: string
+          memorial_id?: string
+          service_date?: string | null
+          service_time?: string | null
+          venue_address?: string | null
+          venue_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memorial_service_info_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: true
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       memory_keywords: {
         Row: {

@@ -12,6 +12,9 @@ import { motion } from "framer-motion";
 import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2, Shield, Save } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 import FlowerTributeDialog from "@/components/memorial/FlowerTributeDialog";
+import JourneyTimeline from "@/components/memorial/JourneyTimeline";
+import MemorialServiceInfo from "@/components/memorial/MemorialServiceInfo";
+import CherishedMemories from "@/components/memorial/CherishedMemories";
 import TributeGarden from "@/components/memorial/TributeGarden";
 
 const storyTypeLabels: Record<string, { label: string; icon: any }> = {
@@ -557,6 +560,27 @@ const MemorialPage = () => {
               )}
             </div>
           )}
+
+          {/* Journey Timeline */}
+          <JourneyTimeline
+            memorialId={id!}
+            memorialName={memorial.full_name}
+            birthYear={memorial.birth_year}
+            deathYear={memorial.death_year}
+            isOwner={isOwner}
+          />
+
+          {/* Memorial Service Info */}
+          <MemorialServiceInfo
+            memorialId={id!}
+            memorialName={memorial.full_name}
+            birthYear={memorial.birth_year}
+            deathYear={memorial.death_year}
+            isOwner={isOwner}
+          />
+
+          {/* Cherished Memories / Photos */}
+          <CherishedMemories memorialId={id!} isActive={isActive} />
 
           {/* Tribute Garden */}
           <TributeGarden memorialId={id!} />
