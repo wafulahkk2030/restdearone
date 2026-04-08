@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare, Bell, Send } from "lucide-react";
+import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare, Bell, Send, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,8 +14,9 @@ import AdminOverview from "@/components/admin/AdminOverview";
 import AdminCommunities from "@/components/admin/AdminCommunities";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminPayments from "@/components/admin/AdminPayments";
+import AdminContacted from "@/components/admin/AdminContacted";
 
-type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "logs" | "notifications";
+type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "logs" | "notifications" | "contacted";
 
 const Admin = () => {
   const { user, isAdmin, adminRole, loading: authLoading } = useAuth();
@@ -177,6 +178,7 @@ const Admin = () => {
     { key: "users", label: "Users", icon: Users },
     { key: "payments", label: "Payments", icon: CreditCard },
     { key: "notifications", label: "Send Notification", icon: Bell },
+    { key: "contacted", label: "Contacted", icon: Mail },
     { key: "logs", label: "Activity Logs", icon: Settings },
   ];
 
@@ -247,6 +249,7 @@ const Admin = () => {
           )}
           {tab === "users" && <AdminUsers userId={user!.id} adminRole={adminRole} />}
           {tab === "payments" && <AdminPayments />}
+          {tab === "contacted" && <AdminContacted />}
 
           {tab === "notifications" && (
             <div className="max-w-lg mx-auto space-y-4">
