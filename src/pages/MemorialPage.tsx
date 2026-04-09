@@ -383,20 +383,18 @@ const MemorialPage = () => {
         <div className="max-w-3xl mx-auto">
           {/* Header */}
           <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Status badge - only visible to owner/admin */}
-            {(isOwner || isAdmin) && (() => {
+            {/* Status badge - only visible to owner/admin, never show "Active" text */}
+            {(isOwner || isAdmin) && !isActive && (() => {
               const url = new URL(window.location.href);
               const fromPayment = url.searchParams.get('trxref') || url.searchParams.get('reference');
               const isPending = memorial.status === 'inactive' && fromPayment;
               return (
                 <div className={`inline-block px-3 py-1 rounded-full text-xs font-body mb-4 ${
-                  memorial.status === 'active' ? 'bg-sage/20 text-sage' :
                   isPending ? 'bg-warm/20 text-warm animate-pulse' :
                   memorial.status === 'community' ? 'bg-primary/20 text-primary' :
                   'bg-accent text-accent-foreground'
                 }`}>
-                  {memorial.status === 'active' ? '🟢 Active Memory Page' :
-                   isPending ? '⏳ Activating... Payment being confirmed' :
+                  {isPending ? '⏳ Activating... Payment being confirmed' :
                    memorial.status === 'community' ? '🔵 Community Page' :
                    '⚪ Page Not Yet Activated'}
                 </div>

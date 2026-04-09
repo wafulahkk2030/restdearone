@@ -22,7 +22,7 @@ const LivingMemoryFeed = () => {
   // Show placeholder if no real data
   const displayData = memorials.length > 0 ? memorials : [
     { id: "1", full_name: "Brian Kisiangani", birth_year: 1989, death_year: 2023, personality_summary: "Brian used to wake up earlier than everyone just to make tea for the house. He said mornings should start with kindness.", relationship_to_creator: "friend" },
-    { id: "2", full_name: "Mary Njeri", birth_year: 1974, death_year: 2018, personality_summary: "Dear Mum, I still hear your voice every time I make tea in the morning. You taught me that love is in the small things…", relationship_to_creator: "mother" },
+    { id: "2", full_name: "Amina Wanjiku", birth_year: 1974, death_year: 2018, personality_summary: "Dear Mum, I still hear your voice every time I make tea in the morning. You taught me that love is in the small things…", relationship_to_creator: "mother" },
     { id: "3", full_name: "James Ochieng", birth_year: 1955, death_year: 2021, personality_summary: "Papa always said, 'A man is measured not by what he has, but by what he gives.' He lived that truth every single day.", relationship_to_creator: "father" },
   ];
 

@@ -22,7 +22,12 @@ const Contact = () => {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("contact_submissions" as any).insert(form as any);
+    const { error } = await supabase.from("contact_submissions").insert({
+      name: form.name,
+      email: form.email,
+      subject: form.subject,
+      message: form.message,
+    });
     setSubmitting(false);
     if (error) {
       toast({ title: "Error sending message", description: error.message, variant: "destructive" });
