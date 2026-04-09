@@ -48,7 +48,30 @@ const Navbar = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Language selector */}
+          <div className="relative">
+            <button
+              onClick={() => setLangOpen(!langOpen)}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-accent transition-colors"
+              title="Language"
+            >
+              <Globe className={`w-4 h-4 ${isTranslating ? 'animate-spin text-primary' : 'text-muted-foreground'}`} />
+            </button>
+            {langOpen && (
+              <div className="absolute right-0 top-10 bg-card border border-border rounded-xl shadow-lg py-1 z-50 min-w-[140px]">
+                {LANGUAGES.map(l => (
+                  <button
+                    key={l.code}
+                    onClick={() => { setLanguage(l.code); setLangOpen(false); }}
+                    className={`block w-full text-left px-3 py-1.5 text-sm font-body hover:bg-accent transition-colors ${language === l.code ? 'text-primary font-semibold' : 'text-foreground'}`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {user ? (
             <>
               {isAdmin && (
