@@ -5,7 +5,7 @@ import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const fallbackLetters = [
-  { id: "1", title: "Dear Mum", content: "I still hear your voice every time I make tea in the morning. You taught me that love is in the small things…", profiles: { display_name: "Sarah W." }, memorial_id: null },
+  { id: "1", title: "Dear Mum", content: "I still hear your voice every time I make tea in the morning. You taught me that love is in the small things…", profiles: { display_name: "Amina K." }, memorial_id: null },
   { id: "2", title: "Dear Brian", content: "I scored a goal last weekend and the first person I wanted to tell was you. I know you would have celebrated the loudest…", profiles: { display_name: "Kevin M." }, memorial_id: null },
 ];
 
