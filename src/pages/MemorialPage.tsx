@@ -16,6 +16,9 @@ import JourneyTimeline from "@/components/memorial/JourneyTimeline";
 import MemorialServiceInfo from "@/components/memorial/MemorialServiceInfo";
 import CherishedMemories from "@/components/memorial/CherishedMemories";
 import TributeGarden from "@/components/memorial/TributeGarden";
+import AILifeTimeline from "@/components/memorial/AILifeTimeline";
+import FamilyVerification from "@/components/memorial/FamilyVerification";
+import MediaEmbeds from "@/components/memorial/MediaEmbeds";
 
 const storyTypeLabels: Record<string, { label: string; icon: any }> = {
   memory: { label: "Memory", icon: BookOpen },
@@ -559,6 +562,12 @@ const MemorialPage = () => {
             </div>
           )}
 
+          {/* Family Verification */}
+          <FamilyVerification memorialId={id!} memorialName={memorial.full_name} />
+
+          {/* AI Life Timeline */}
+          <AILifeTimeline memorialId={id!} memorialName={memorial.full_name} storiesCount={stories.length} />
+
           {/* Journey Timeline */}
           <JourneyTimeline
             memorialId={id!}
@@ -576,6 +585,9 @@ const MemorialPage = () => {
             deathYear={memorial.death_year}
             isOwner={isOwner}
           />
+
+          {/* Audio & Video Memories */}
+          <MediaEmbeds memorialId={id!} isActive={isActive} />
 
           {/* Cherished Memories / Photos */}
           <CherishedMemories memorialId={id!} isActive={isActive} />
