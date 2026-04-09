@@ -2,11 +2,14 @@ import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, X, Shield } from "lucide-react";
+import { useTranslation, LANGUAGES } from "@/contexts/TranslationContext";
+import { Menu, X, Shield, Globe } from "lucide-react";
 
 const Navbar = () => {
   const { user, isAdmin, signOut } = useAuth();
+  const { language, setLanguage, isTranslating } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const location = useLocation();
 
   const navLinks = [
