@@ -69,10 +69,8 @@ const Explore = () => {
                     transition={{ delay: i * 0.05 }}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <span className={`text-xs font-body font-medium px-2 py-1 rounded-md ${
-                        m.status === 'active' ? 'bg-sage/20 text-sage' : 'bg-accent text-accent-foreground'
-                      }`}>
-                        {m.status === 'active' ? '🟢 Active' : m.status}
+                      <span className="text-xs font-body font-medium px-2 py-1 rounded-md bg-sage/20 text-sage">
+                        Memory Page
                       </span>
                     </div>
                     <h3 className="font-display text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">{m.full_name}</h3>
