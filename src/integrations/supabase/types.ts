@@ -466,6 +466,47 @@ export type Database = {
           },
         ]
       }
+      family_verifications: {
+        Row: {
+          created_at: string
+          evidence_text: string | null
+          id: string
+          memorial_id: string
+          relationship: string
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          evidence_text?: string | null
+          id?: string
+          memorial_id: string
+          relationship: string
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          evidence_text?: string | null
+          id?: string
+          memorial_id?: string
+          relationship?: string
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_verifications_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flower_tributes: {
         Row: {
           created_at: string
@@ -684,6 +725,44 @@ export type Database = {
           },
           {
             foreignKeyName: "invites_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_embeds: {
+        Row: {
+          added_by: string
+          created_at: string
+          embed_type: string
+          embed_url: string
+          id: string
+          memorial_id: string
+          title: string | null
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          embed_type?: string
+          embed_url: string
+          id?: string
+          memorial_id: string
+          title?: string | null
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          embed_type?: string
+          embed_url?: string
+          id?: string
+          memorial_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_embeds_memorial_id_fkey"
             columns: ["memorial_id"]
             isOneToOne: false
             referencedRelation: "memorial_pages"
