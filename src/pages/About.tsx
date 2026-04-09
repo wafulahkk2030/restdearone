@@ -116,7 +116,7 @@ const About = () => {
             <div className="space-y-6">
               {[
                 { step: "1", title: "Create a Memory Page", desc: "Sign up and create a dedicated page for someone you want to remember. Share their name, the years they lived, and a few personal details — their personality, a common phrase, an unforgettable moment." },
-                { step: "2", title: "Activate the Page", desc: "For KES 250 (approximately $2.50), activate a Living Memory Page for 7 days. During this time, the platform sends automated memory prompts every 48 hours to everyone connected to the page." },
+                { step: "2", title: "Activate the Page", desc: "For KES 100/year, activate a Living Memory Page. Invite others to contribute stories, reflections, lessons, and letters." },
                 { step: "3", title: "Invite Others to Contribute", desc: "Share the page with family, friends, and anyone who knew the person. They can write stories, post reflections, share lessons, and even write letters to the departed." },
                 { step: "4", title: "Watch the Story Grow", desc: "As more people contribute, AI generates a life timeline, extracts meaningful keywords for the Memory Echo Wall, and highlights the most powerful stories." },
                 { step: "5", title: "Join Communities", desc: "Connect with others who share similar experiences. Join communities like 'Losing a Parent' or 'Remembering Teachers' and participate in daily reflections." },
@@ -168,12 +168,9 @@ const About = () => {
                 We are constantly evolving. Here are some of the features on our roadmap:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-2">
-                <li><strong>AI Life Timeline:</strong> An AI-reconstructed biography built from collective memories</li>
-                <li><strong>Anniversary Reminders:</strong> Gentle notifications on the anniversary of a loved one's passing</li>
-                <li><strong>Family Verification:</strong> Official family pages verified by platform administrators</li>
-                <li><strong>Audio & Video Memories:</strong> Upload voice notes and video clips alongside written stories</li>
-                <li><strong>Multi-language Support:</strong> Ensuring every community can share memories in their own language</li>
-                <li><strong>Mobile App:</strong> A dedicated app for iOS and Android</li>
+                <li><strong>Native Mobile App:</strong> A dedicated app for iOS and Android (currently available as an installable web app)</li>
+                <li><strong>Auto M-Pesa Payouts:</strong> Automated disbursements for fundraisers and flower tribute earnings</li>
+                <li><strong>Memory Collaboration:</strong> Real-time collaborative story writing with family members</li>
               </ul>
               <p>
                 We are building RestDearOne not as a product, but as a movement. A movement to ensure that no life is ever truly forgotten.
