@@ -62,6 +62,7 @@ const App = () => (
             <Route path="/guidelines" element={<CommunityGuidelines />} />
             <Route path="/fundraise" element={<Fundraise />} />
             <Route path="/fundraise/:id" element={<FundraiserPage />} />
+            <Route path="/support/:id" element={<FundraiserPage />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
