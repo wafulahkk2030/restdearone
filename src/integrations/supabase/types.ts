@@ -426,7 +426,9 @@ export type Database = {
           fundraiser_id: string
           gross_amount: number
           id: string
+          is_anonymous: boolean | null
           net_amount: number
+          note_to_family: string | null
           payment_reference: string | null
           payment_status: string
           platform_fee: number
@@ -438,7 +440,9 @@ export type Database = {
           fundraiser_id: string
           gross_amount: number
           id?: string
+          is_anonymous?: boolean | null
           net_amount: number
+          note_to_family?: string | null
           payment_reference?: string | null
           payment_status?: string
           platform_fee: number
@@ -450,7 +454,9 @@ export type Database = {
           fundraiser_id?: string
           gross_amount?: number
           id?: string
+          is_anonymous?: boolean | null
           net_amount?: number
+          note_to_family?: string | null
           payment_reference?: string | null
           payment_status?: string
           platform_fee?: number
@@ -642,50 +648,149 @@ export type Database = {
           },
         ]
       }
+      fundraiser_images: {
+        Row: {
+          created_at: string
+          fundraiser_id: string
+          id: string
+          image_url: string
+          sort_order: number | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          fundraiser_id: string
+          id?: string
+          image_url: string
+          sort_order?: number | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          fundraiser_id?: string
+          id?: string
+          image_url?: string
+          sort_order?: number | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraiser_images_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "fundraisers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fundraiser_link_clicks: {
+        Row: {
+          clicked_at: string
+          fundraiser_id: string
+          id: string
+          referrer: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          fundraiser_id: string
+          id?: string
+          referrer?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          fundraiser_id?: string
+          id?: string
+          referrer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraiser_link_clicks_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "fundraisers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fundraisers: {
         Row: {
+          admin_notes: string | null
           created_at: string
           created_by: string
           current_amount: number
           deadline: string
           description: string | null
+          highlight_tier: string | null
+          highlight_until: string | null
           id: string
+          memorial_id: string | null
           payout_account: string | null
           payout_details: Json | null
           payout_method: string | null
+          personal_statement: string | null
+          rejection_reason: string | null
+          relationship_to_deceased: string | null
+          short_id: string | null
+          slug: string | null
           status: string
           target_amount: number
           title: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           created_by: string
           current_amount?: number
           deadline: string
           description?: string | null
+          highlight_tier?: string | null
+          highlight_until?: string | null
           id?: string
+          memorial_id?: string | null
           payout_account?: string | null
           payout_details?: Json | null
           payout_method?: string | null
+          personal_statement?: string | null
+          rejection_reason?: string | null
+          relationship_to_deceased?: string | null
+          short_id?: string | null
+          slug?: string | null
           status?: string
           target_amount: number
           title: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           created_by?: string
           current_amount?: number
           deadline?: string
           description?: string | null
+          highlight_tier?: string | null
+          highlight_until?: string | null
           id?: string
+          memorial_id?: string | null
           payout_account?: string | null
           payout_details?: Json | null
           payout_method?: string | null
+          personal_statement?: string | null
+          rejection_reason?: string | null
+          relationship_to_deceased?: string | null
+          short_id?: string | null
+          slug?: string | null
           status?: string
           target_amount?: number
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fundraisers_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invites: {
         Row: {

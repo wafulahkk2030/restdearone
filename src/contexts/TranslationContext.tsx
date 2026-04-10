@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TranslationContextType {
@@ -30,24 +30,25 @@ const LANGUAGES = [
 
 export { LANGUAGES };
 
-// In-memory cache for translated strings
-const translationCache: Record<string, Record<string, string>> = {};
+// Global cache persists across re-renders
+const cache: Record<string, Record<string, string>> = {};
 
 export const TranslationProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguageState] = useState(() => {
-    return localStorage.getItem("rdo-lang") || "en";
-  });
-  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [language, setLanguageState] = useState(() => localStorage.getItem("rdo-lang") || "en");
+  const [translated, setTranslated] = useState<Record<string, string>>({});
   const [isTranslating, setIsTranslating] = useState(false);
-  const [pendingTexts, setPendingTexts] = useState<Set<string>>(new Set());
+  const pendingRef = useRef<Set<string>>(new Set());
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const translateBatch = useCallback(async (texts: string[], lang: string) => {
-    if (lang === "en" || texts.length === 0) return;
+  const flushBatch = useCallback(async (lang: string) => {
+    const texts = Array.from(pendingRef.current);
+    pendingRef.current.clear();
+    if (texts.length === 0 || lang === "en") return;
 
-    // Filter out already cached texts
-    const uncached = texts.filter(t => !translationCache[lang]?.[t]);
+    // Filter already cached
+    const uncached = texts.filter(t => !cache[lang]?.[t]);
     if (uncached.length === 0) {
-      setTranslations(prev => ({ ...prev, ...translationCache[lang] }));
+      setTranslated(prev => ({ ...prev, ...cache[lang] }));
       return;
     }
 
@@ -59,11 +60,11 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (!error && data?.translations) {
-        if (!translationCache[lang]) translationCache[lang] = {};
+        if (!cache[lang]) cache[lang] = {};
         uncached.forEach((text, i) => {
-          translationCache[lang][text] = data.translations[i] || text;
+          cache[lang][text] = data.translations[i] || text;
         });
-        setTranslations(prev => ({ ...prev, ...translationCache[lang] }));
+        setTranslated(prev => ({ ...prev, ...cache[lang] }));
       }
     } catch (err) {
       console.error("Translation error:", err);
@@ -75,40 +76,27 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
     setLanguageState(lang);
     localStorage.setItem("rdo-lang", lang);
     if (lang === "en") {
-      setTranslations({});
-    } else if (translationCache[lang]) {
-      setTranslations(translationCache[lang]);
+      setTranslated({});
+    } else if (cache[lang]) {
+      setTranslated({ ...cache[lang] });
     }
+    // Reset pending
+    pendingRef.current.clear();
   }, []);
 
-  // Translate function — registers text for batch translation
   const t = useCallback((text: string): string => {
     if (language === "en") return text;
-    
-    // Check cache
-    if (translationCache[language]?.[text]) {
-      return translationCache[language][text];
-    }
-    
-    // Queue for translation if not already pending
-    if (!pendingTexts.has(text)) {
-      setPendingTexts(prev => {
-        const next = new Set(prev);
-        next.add(text);
-        // Debounce batch translate
-        setTimeout(() => {
-          const batch = Array.from(next);
-          if (batch.length > 0) {
-            translateBatch(batch, language);
-            setPendingTexts(new Set());
-          }
-        }, 500);
-        return next;
-      });
+    if (cache[language]?.[text]) return cache[language][text];
+
+    // Queue for batch translation
+    if (!pendingRef.current.has(text)) {
+      pendingRef.current.add(text);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => flushBatch(language), 300);
     }
 
-    return translations[text] || text;
-  }, [language, translations, pendingTexts, translateBatch]);
+    return translated[text] || text;
+  }, [language, translated, flushBatch]);
 
   return (
     <TranslationContext.Provider value={{ language, setLanguage, t, isTranslating }}>

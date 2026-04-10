@@ -24,7 +24,7 @@ const Footer = () => {
               <li><Link to="/forum" className="hover:text-navy-foreground transition-colors">Community Forum</Link></li>
               <li><Link to="/discover" className="hover:text-navy-foreground transition-colors">Discover a Life</Link></li>
               <li><Link to="/create-memorial" className="hover:text-navy-foreground transition-colors">Create Memory Page</Link></li>
-              <li><Link to="/fundraise" className="hover:text-navy-foreground transition-colors">Fundraise</Link></li>
+              <li><Link to="/fundraise" className="hover:text-navy-foreground transition-colors">Support a Family</Link></li>
               <li><Link to="/chat" className="hover:text-navy-foreground transition-colors">Memory Conversations</Link></li>
             </ul>
           </div>

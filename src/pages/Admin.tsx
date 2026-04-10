@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare, Bell, Send, Mail } from "lucide-react";
+import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare, Bell, Send, Mail, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,8 +15,9 @@ import AdminCommunities from "@/components/admin/AdminCommunities";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminPayments from "@/components/admin/AdminPayments";
 import AdminContacted from "@/components/admin/AdminContacted";
+import AdminFundraisers from "@/components/admin/AdminFundraisers";
 
-type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "logs" | "notifications" | "contacted";
+type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "fundraisers" | "logs" | "notifications" | "contacted";
 
 const Admin = () => {
   const { user, isAdmin, adminRole, loading: authLoading } = useAuth();
@@ -177,6 +178,7 @@ const Admin = () => {
     { key: "communities", label: "Communities", icon: MessageSquare },
     { key: "users", label: "Users", icon: Users },
     { key: "payments", label: "Payments", icon: CreditCard },
+    { key: "fundraisers", label: "Fundraisers", icon: Heart },
     { key: "notifications", label: "Send Notification", icon: Bell },
     { key: "contacted", label: "Contacted", icon: Mail },
     { key: "logs", label: "Activity Logs", icon: Settings },
@@ -249,6 +251,7 @@ const Admin = () => {
           )}
           {tab === "users" && <AdminUsers userId={user!.id} adminRole={adminRole} />}
           {tab === "payments" && <AdminPayments />}
+          {tab === "fundraisers" && <AdminFundraisers userId={user!.id} />}
           {tab === "contacted" && <AdminContacted />}
 
           {tab === "notifications" && (

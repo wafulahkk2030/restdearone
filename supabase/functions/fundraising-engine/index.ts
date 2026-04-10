@@ -25,7 +25,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { action, fundraiser_id, amount } = await req.json();
+    const { action, fundraiser_id, amount, is_anonymous, note_to_family } = await req.json();
 
     const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -33,17 +33,17 @@ Deno.serve(async (req: Request) => {
       if (!fundraiser_id || !amount || amount < 50) throw new Error("Invalid fundraiser_id or amount (min 50)");
 
       // Verify fundraiser exists and is active
-      const { data: fundraiser } = await serviceClient.from("fundraisers").select("id, title, status").eq("id", fundraiser_id).single();
+      const { data: fundraiser } = await serviceClient.from("fundraisers").select("id, title, status, short_id, slug").eq("id", fundraiser_id).single();
       if (!fundraiser) throw new Error("Fundraiser not found");
       if (fundraiser.status !== "active") throw new Error("Fundraiser is no longer active");
 
-      // Calculate fees
-      const fee = Math.round(amount * 0.095);
-      const net = amount - fee;
+      // NO fee deduction on contribution — fees are taken at payout
+      // Full amount goes to the fundraiser total
+      const grossAmount = amount;
 
       // Get user profile
       const { data: profile } = await serviceClient.from("profiles").select("email, display_name, username").eq("id", user.id).single();
-      const donorName = profile?.display_name || profile?.username || "Anonymous";
+      const donorName = is_anonymous ? "Anonymous" : (profile?.display_name || profile?.username || "Anonymous");
 
       // Generate reference
       const now = new Date();
@@ -51,19 +51,25 @@ Deno.serve(async (req: Request) => {
       const randomCode = Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
       const reference = `RDO-FND-${dateStr}-${randomCode}`;
 
-      // Create pending contribution
+      // Create pending contribution — gross = net (no fee on contribution)
       await serviceClient.from("contributions").insert({
         fundraiser_id,
         user_id: user.id,
         donor_name: donorName,
-        gross_amount: amount,
-        platform_fee: fee,
-        net_amount: net,
+        gross_amount: grossAmount,
+        platform_fee: 0,
+        net_amount: grossAmount,
         payment_reference: reference,
         payment_status: "pending",
+        is_anonymous: !!is_anonymous,
+        note_to_family: note_to_family || null,
       });
 
-      // Initialize Paystack
+      // Initialize Paystack — charge exact amount (no fee markup)
+      const callbackUrl = fundraiser.short_id
+        ? `${req.headers.get("origin") || "https://restdearone.com"}/support/${fundraiser.slug}-${fundraiser.short_id}`
+        : `${req.headers.get("origin") || "https://restdearone.com"}/fundraise/${fundraiser_id}`;
+
       const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
         method: "POST",
         headers: {
@@ -72,7 +78,7 @@ Deno.serve(async (req: Request) => {
         },
         body: JSON.stringify({
           email: profile?.email || user.email,
-          amount: amount * 100,
+          amount: grossAmount * 100, // Convert to kobo/cents
           currency: "KES",
           reference,
           metadata: {
@@ -80,11 +86,11 @@ Deno.serve(async (req: Request) => {
             fundraiser_id,
             user_id: user.id,
             donor_name: donorName,
-            gross_amount: amount,
-            platform_fee: fee,
-            net_amount: net,
+            amount: grossAmount,
+            is_anonymous: !!is_anonymous,
+            note_to_family: note_to_family || null,
           },
-          callback_url: `${req.headers.get("origin") || "https://restdearone.lovable.app"}/fundraise/${fundraiser_id}`,
+          callback_url: callbackUrl,
         }),
       });
 
