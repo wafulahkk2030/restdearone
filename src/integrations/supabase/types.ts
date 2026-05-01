@@ -712,6 +712,36 @@ export type Database = {
           },
         ]
       }
+      fundraiser_payouts: {
+        Row: {
+          created_at: string
+          fundraiser_id: string
+          id: string
+          payout_account: string | null
+          payout_details: Json | null
+          payout_method: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fundraiser_id: string
+          id?: string
+          payout_account?: string | null
+          payout_details?: Json | null
+          payout_method?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fundraiser_id?: string
+          id?: string
+          payout_account?: string | null
+          payout_details?: Json | null
+          payout_method?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fundraisers: {
         Row: {
           admin_notes: string | null
