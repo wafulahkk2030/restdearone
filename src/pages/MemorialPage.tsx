@@ -514,8 +514,8 @@ const MemorialPage = () => {
               )}
             </div>
 
-            {/* Story payment info */}
-            {isActive && storyPaymentInfo && user && !isAdmin && (
+            {/* Story payment info — only visible to the page owner */}
+            {isActive && storyPaymentInfo && user && isOwner && !isAdmin && (
               <div className="mt-3 text-xs text-muted-foreground font-body">
                 {storyPaymentInfo.required ? (
                   <span className="text-warm">⚠️ Your next story requires a payment of KES {storyPaymentInfo.amount}. After payment, you get 2 free stories.</span>
