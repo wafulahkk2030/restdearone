@@ -5,7 +5,6 @@ import LivingMemoryFeed from "@/components/home/LivingMemoryFeed";
 import DiscoverSection from "@/components/home/DiscoverSection";
 import MemoryPromptsSection from "@/components/home/MemoryPromptsSection";
 import MemoryEchoWall from "@/components/home/MemoryEchoWall";
-import LettersSection from "@/components/home/LettersSection";
 import CommunitySection from "@/components/home/CommunitySection";
 import StatsSection from "@/components/home/StatsSection";
 import WhySection from "@/components/home/WhySection";
@@ -20,7 +19,6 @@ const Index = () => {
       <DiscoverSection />
       <MemoryPromptsSection />
       <MemoryEchoWall />
-      <LettersSection />
       <CommunitySection />
       <StatsSection />
       <WhySection />
