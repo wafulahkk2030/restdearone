@@ -38,7 +38,16 @@ Deno.serve(async (req: Request) => {
       const totalNet = (contribs || []).reduce((s: number, c: any) => s + c.net_amount, 0);
       const totalFee = (contribs || []).reduce((s: number, c: any) => s + c.platform_fee, 0);
       const beneficiaryName = f.profiles?.display_name || f.profiles?.username || "Unknown";
-      const payoutInfo = f.payout_method ? `${f.payout_method.toUpperCase()}: ${f.payout_account}` : "Not provided yet";
+
+      // Read private payout details from the secured fundraiser_payouts table
+      const { data: payout } = await supabase
+        .from("fundraiser_payouts")
+        .select("payout_method, payout_account")
+        .eq("fundraiser_id", f.id)
+        .maybeSingle();
+      const payoutInfo = payout?.payout_method
+        ? `${payout.payout_method.toUpperCase()}: ${payout.payout_account}`
+        : "Not provided yet";
 
       // Notify admins
       for (const admin of (admins || [])) {

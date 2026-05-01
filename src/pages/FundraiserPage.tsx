@@ -29,6 +29,7 @@ const FundraiserPage = () => {
   const [contributing, setContributing] = useState(false);
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ method: "mpesa", account: "" });
+  const [payout, setPayout] = useState<any>(null);
   const [showShare, setShowShare] = useState(false);
   const contributionsEndRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +116,18 @@ const FundraiserPage = () => {
       ]);
       setContributions(cRes.data || []);
       setImages(iRes.data || []);
+
+      // Load private payout details — RLS ensures only owner/admin sees this
+      if (user) {
+        const { data: payoutData } = await supabase
+          .from("fundraiser_payouts" as any)
+          .select("*")
+          .eq("fundraiser_id", fundraiserData.id)
+          .maybeSingle();
+        setPayout(payoutData || null);
+      } else {
+        setPayout(null);
+      }
     }
     setLoading(false);
   };
@@ -148,10 +161,11 @@ const FundraiserPage = () => {
 
   const savePayoutDetails = async () => {
     if (!payoutForm.account) { toast({ title: "Please enter account details", variant: "destructive" }); return; }
-    const { error } = await supabase.from("fundraisers").update({
+    const { error } = await supabase.from("fundraiser_payouts" as any).upsert({
+      fundraiser_id: fundraiser.id,
       payout_method: payoutForm.method,
       payout_account: payoutForm.account,
-    }).eq("id", fundraiser.id);
+    }, { onConflict: "fundraiser_id" });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
@@ -294,7 +308,7 @@ const FundraiserPage = () => {
               <Button variant="outline" onClick={() => setShowShare(true)} className="gap-1">
                 <Share2 className="w-4 h-4" /> Share
               </Button>
-              {isOwner && !fundraiser.payout_account && (
+              {isOwner && !payout?.payout_account && (
                 <Button variant="outline" onClick={() => setShowPayoutForm(true)}>
                   Add Payout Details
                 </Button>
@@ -310,11 +324,11 @@ const FundraiserPage = () => {
               )}
             </div>
 
-            {/* Payout info for owner */}
-            {isOwner && fundraiser.payout_account && (
+            {/* Payout info for owner — private, never shown to public */}
+            {isOwner && payout?.payout_account && (
               <div className="bg-sage/10 border border-sage/20 rounded-xl p-4 mb-6 text-sm font-body">
                 <p className="font-semibold text-foreground">Payout Details</p>
-                <p className="text-muted-foreground">Method: {fundraiser.payout_method?.toUpperCase()} — {fundraiser.payout_account}</p>
+                <p className="text-muted-foreground">Method: {payout.payout_method?.toUpperCase()} — {payout.payout_account}</p>
               </div>
             )}
 
