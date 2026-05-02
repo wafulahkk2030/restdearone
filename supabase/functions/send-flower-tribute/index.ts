@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { z } from "npm:zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,15 @@ const FLOWER_TIERS: Record<string, { name: string; price: number }> = {
   legacy_bouquet: { name: "Legacy Bouquet", price: 5000 },
   celestial_garden: { name: "Celestial Garden", price: 10000 },
 };
+
+const BodySchema = z.object({
+  memorial_id: z.string().uuid(),
+  flower_type: z.enum([
+    "memory_daisy","grace_lily","golden_rose","eternal_orchid",
+    "heaven_blossom","legacy_bouquet","celestial_garden",
+  ]),
+  tribute_note: z.string().trim().max(500).optional().nullable(),
+});
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -35,9 +45,11 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { memorial_id, flower_type, tribute_note } = await req.json();
-
-    if (!memorial_id || !flower_type) throw new Error("memorial_id and flower_type required");
+    const parsed = BodySchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { memorial_id, flower_type, tribute_note } = parsed.data;
 
     const tier = FLOWER_TIERS[flower_type];
     if (!tier) throw new Error("Invalid flower type");
