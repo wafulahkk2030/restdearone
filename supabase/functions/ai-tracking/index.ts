@@ -1,10 +1,25 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { z } from "npm:zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const BodySchema = z.object({
+  action: z.enum(["extract_keywords", "moderate_content", "track_activity", "generate_prompt"]),
+  data: z.object({
+    memorial_id: z.string().uuid().optional(),
+    text: z.string().max(20000).optional(),
+    content: z.string().max(20000).optional(),
+    content_type: z.string().max(50).optional(),
+    content_id: z.string().uuid().optional(),
+    user_id: z.string().uuid().optional(),
+    event_type: z.string().max(100).optional(),
+    metadata: z.record(z.string(), z.any()).optional(),
+  }).default({}),
+});
 
 function extractKeywords(text: string): string[] {
   const stopWords = new Set([
@@ -78,7 +93,11 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { action, data } = await req.json();
+    const parsed = BodySchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { action, data } = parsed.data;
 
     if (action === "extract_keywords") {
       const { memorial_id, text } = data;
