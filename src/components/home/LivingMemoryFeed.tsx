@@ -7,9 +7,15 @@ import { supabase } from "@/integrations/supabase/client";
 const LivingMemoryFeed = () => {
   const [memorials, setMemorials] = useState<any[]>([]);
 
+  // Curated fallback memorials — used to top up to 3 cards when DB has fewer entries
+  const fallbackMemorials = [
+    { id: "fallback-1", full_name: "Brian Kisiangani", birth_year: 1989, death_year: 2023, relationship_to_creator: "friend", personality_summary: "Brian used to wake up earlier than everyone just to make tea for the house. He said mornings should start with kindness.", life_lesson: "Begin every day with a small act of love.", common_phrase: "Start gentle, the day will follow." },
+    { id: "fallback-2", full_name: "Amina Wanjiku", birth_year: 1974, death_year: 2018, relationship_to_creator: "mother", personality_summary: "Dear Mum, I still hear your voice every time I make tea in the morning. You taught me that love is in the small things.", life_lesson: "Love lives in the smallest, quietest moments.", common_phrase: "Pole pole, mtoto wangu." },
+    { id: "fallback-3", full_name: "James Ochieng", birth_year: 1955, death_year: 2021, relationship_to_creator: "father", personality_summary: "Papa always said a man is measured not by what he has, but by what he gives. He lived that truth every single day.", life_lesson: "Generosity is the truest measure of a life.", common_phrase: "A man is measured by what he gives." },
+  ];
+
   useEffect(() => {
     const load = async () => {
-      // Get the most recent 3 memorial pages
       const { data: latest } = await supabase
         .from("memorial_pages")
         .select("*")
@@ -19,8 +25,9 @@ const LivingMemoryFeed = () => {
       const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       const newest = latest?.[0]?.created_at ? new Date(latest[0].created_at).getTime() : 0;
 
-      // If no new memorial was created in the last 7 days, refresh the feed
-      // by mixing in a randomly selected memorial so the home page never feels stale.
+      let chosen: any[] = latest || [];
+
+      // If newest is older than 7 days, rotate from a larger pool (deterministic per-day)
       if (latest && latest.length > 0 && newest < sevenDaysAgo) {
         const { data: pool } = await supabase
           .from("memorial_pages")
@@ -28,28 +35,28 @@ const LivingMemoryFeed = () => {
           .order("created_at", { ascending: false })
           .limit(50);
         if (pool && pool.length > 0) {
-          const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24)); // rotates daily
+          const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
           const shuffled = [...pool].sort((a, b) => {
             const ha = (a.id + seed).split("").reduce((s, c) => s + c.charCodeAt(0), 0);
             const hb = (b.id + seed).split("").reduce((s, c) => s + c.charCodeAt(0), 0);
             return ha - hb;
           });
-          setMemorials(shuffled.slice(0, 3));
-          return;
+          chosen = shuffled.slice(0, 3);
         }
       }
 
-      if (latest && latest.length > 0) setMemorials(latest);
+      // Always guarantee 3 cards — top up with curated fallbacks if needed
+      if (chosen.length < 3) {
+        const needed = 3 - chosen.length;
+        chosen = [...chosen, ...fallbackMemorials.slice(0, needed)];
+      }
+
+      setMemorials(chosen);
     };
     load();
   }, []);
 
-  // Show placeholder if no real data
-  const displayData = memorials.length > 0 ? memorials : [
-    { id: "1", full_name: "Brian Kisiangani", birth_year: 1989, death_year: 2023, personality_summary: "Brian used to wake up earlier than everyone just to make tea for the house. He said mornings should start with kindness.", relationship_to_creator: "friend" },
-    { id: "2", full_name: "Amina Wanjiku", birth_year: 1974, death_year: 2018, personality_summary: "Dear Mum, I still hear your voice every time I make tea in the morning. You taught me that love is in the small things…", relationship_to_creator: "mother" },
-    { id: "3", full_name: "James Ochieng", birth_year: 1955, death_year: 2021, personality_summary: "Papa always said, 'A man is measured not by what he has, but by what he gives.' He lived that truth every single day.", relationship_to_creator: "father" },
-  ];
+  const displayData = memorials.length > 0 ? memorials : fallbackMemorials;
 
   return (
     <section className="py-20 bg-background">
@@ -61,7 +68,7 @@ const LivingMemoryFeed = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {displayData.slice(0, 3).map((m, i) => (
-            <Link key={m.id} to={memorials.length > 0 ? `/memorial/${m.id}` : "/create-memorial"}>
+            <Link key={m.id} to={String(m.id).startsWith("fallback-") ? "/create-memorial" : `/memorial/${m.id}`}>
               <motion.div
                 className="bg-card rounded-xl p-6 border border-border hover:shadow-lg transition-all duration-300 cursor-pointer group h-full flex flex-col"
                 initial={{ opacity: 0, y: 20 }}
