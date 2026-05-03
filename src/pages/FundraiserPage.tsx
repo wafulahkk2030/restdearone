@@ -111,7 +111,7 @@ const FundraiserPage = () => {
       } as any);
 
       const [cRes, iRes] = await Promise.all([
-        supabase.from("contributions").select("*").eq("fundraiser_id", fundraiserData.id).eq("payment_status", "success").order("created_at", { ascending: false }),
+        supabase.from("public_contributions").select("*").eq("fundraiser_id", fundraiserData.id).order("created_at", { ascending: false }),
         supabase.from("fundraiser_images").select("*").eq("fundraiser_id", fundraiserData.id).order("sort_order"),
       ]);
       setContributions(cRes.data || []);
