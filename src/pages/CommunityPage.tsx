@@ -54,10 +54,20 @@ const CommunityPage = () => {
     setLoading(true);
     const [comRes, membersRes] = await Promise.all([
       supabase.from("community_groups").select("*").eq("id", id).single(),
-      supabase.from("community_members").select("*, profiles:public_profiles!user_id(display_name, username, country, avatar_url)").eq("community_id", id),
+      supabase.from("community_members").select("*").eq("community_id", id),
     ]);
     setCommunity(comRes.data);
-    setMembers(membersRes.data || []);
+    let membersList: any[] = membersRes.data || [];
+    if (membersList.length > 0) {
+      const ids = [...new Set(membersList.map((m: any) => m.user_id))];
+      const { data: profs } = await supabase
+        .from("public_profiles")
+        .select("id, display_name, username, country, avatar_url")
+        .in("id", ids);
+      const pmap = Object.fromEntries((profs || []).map((p: any) => [p.id, p]));
+      membersList = membersList.map((m: any) => ({ ...m, profiles: pmap[m.user_id] || {} }));
+    }
+    setMembers(membersList);
 
     let mem = null;
     if (user) {
