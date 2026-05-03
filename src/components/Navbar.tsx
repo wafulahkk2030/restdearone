@@ -2,14 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation, LANGUAGES } from "@/contexts/TranslationContext";
-import { Menu, X, Shield, Globe } from "lucide-react";
+import { Menu, X, Shield } from "lucide-react";
 
 const Navbar = () => {
   const { user, isAdmin, signOut } = useAuth();
-  const { language, setLanguage, isTranslating } = useTranslation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
   const location = useLocation();
 
   const navLinks = [
@@ -49,29 +46,6 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Language selector */}
-          <div className="relative">
-            <button
-              onClick={() => setLangOpen(!langOpen)}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-accent transition-colors"
-              title="Language"
-            >
-              <Globe className={`w-4 h-4 ${isTranslating ? 'animate-spin text-primary' : 'text-muted-foreground'}`} />
-            </button>
-            {langOpen && (
-              <div className="absolute right-0 top-10 bg-card border border-border rounded-xl shadow-lg py-1 z-50 min-w-[140px]">
-                {LANGUAGES.map(l => (
-                  <button
-                    key={l.code}
-                    onClick={() => { setLanguage(l.code); setLangOpen(false); }}
-                    className={`block w-full text-left px-3 py-1.5 text-sm font-body hover:bg-accent transition-colors ${language === l.code ? 'text-primary font-semibold' : 'text-foreground'}`}
-                  >
-                    {l.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           {user ? (
             <>
               {isAdmin && (
