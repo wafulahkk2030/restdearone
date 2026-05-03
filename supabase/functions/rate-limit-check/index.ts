@@ -16,6 +16,8 @@ Deno.serve(async (req: Request) => {
     // Check rate limits
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
 
+    // Abuse-only thresholds: high enough that normal users are never blocked,
+    // only triggered by automated/attack-like behavior.
     if (action_type === "story") {
       const { count } = await supabase
         .from("stories")
@@ -23,8 +25,8 @@ Deno.serve(async (req: Request) => {
         .eq("author_id", user_id)
         .gte("created_at", oneHourAgo);
 
-      if ((count || 0) >= 10) {
-        return new Response(JSON.stringify({ blocked: true, reason: "Max 10 stories per hour" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if ((count || 0) >= 200) {
+        return new Response(JSON.stringify({ blocked: true, reason: "Unusual activity detected" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
@@ -35,8 +37,8 @@ Deno.serve(async (req: Request) => {
         .eq("author_id", user_id)
         .gte("created_at", oneHourAgo);
 
-      if ((count || 0) >= 30) {
-        return new Response(JSON.stringify({ blocked: true, reason: "Max 30 comments per hour" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if ((count || 0) >= 500) {
+        return new Response(JSON.stringify({ blocked: true, reason: "Unusual activity detected" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
