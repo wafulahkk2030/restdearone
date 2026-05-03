@@ -470,6 +470,13 @@ export type Database = {
             referencedRelation: "fundraisers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contributions_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "public_fundraisers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       family_verifications: {
@@ -681,6 +688,13 @@ export type Database = {
             referencedRelation: "fundraisers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fundraiser_images_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "public_fundraisers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fundraiser_link_clicks: {
@@ -708,6 +722,13 @@ export type Database = {
             columns: ["fundraiser_id"]
             isOneToOne: false
             referencedRelation: "fundraisers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraiser_link_clicks_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "public_fundraisers"
             referencedColumns: ["id"]
           },
         ]
@@ -1585,6 +1606,189 @@ export type Database = {
       }
     }
     Views: {
+      public_community_members: {
+        Row: {
+          community_id: string | null
+          id: string | null
+          joined_at: string | null
+          role: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          community_id?: string | null
+          id?: string | null
+          joined_at?: string | null
+          role?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          community_id?: string | null
+          id?: string | null
+          joined_at?: string | null
+          role?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "community_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_contributions: {
+        Row: {
+          created_at: string | null
+          donor_name: string | null
+          fundraiser_id: string | null
+          gross_amount: number | null
+          id: string | null
+          is_anonymous: boolean | null
+          note_to_family: string | null
+          payment_status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          donor_name?: never
+          fundraiser_id?: string | null
+          gross_amount?: number | null
+          id?: string | null
+          is_anonymous?: boolean | null
+          note_to_family?: never
+          payment_status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          donor_name?: never
+          fundraiser_id?: string | null
+          gross_amount?: number | null
+          id?: string | null
+          is_anonymous?: boolean | null
+          note_to_family?: never
+          payment_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contributions_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "fundraisers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contributions_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "public_fundraisers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_family_verifications: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          memorial_id: string | null
+          relationship: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          memorial_id?: string | null
+          relationship?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          memorial_id?: string | null
+          relationship?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_verifications_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_fundraisers: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          current_amount: number | null
+          deadline: string | null
+          description: string | null
+          highlight_tier: string | null
+          highlight_until: string | null
+          id: string | null
+          memorial_id: string | null
+          personal_statement: string | null
+          relationship_to_deceased: string | null
+          short_id: string | null
+          slug: string | null
+          status: string | null
+          target_amount: number | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          current_amount?: number | null
+          deadline?: string | null
+          description?: string | null
+          highlight_tier?: string | null
+          highlight_until?: string | null
+          id?: string | null
+          memorial_id?: string | null
+          personal_statement?: string | null
+          relationship_to_deceased?: string | null
+          short_id?: string | null
+          slug?: string | null
+          status?: string | null
+          target_amount?: number | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          current_amount?: number | null
+          deadline?: string | null
+          description?: string | null
+          highlight_tier?: string | null
+          highlight_until?: string | null
+          id?: string | null
+          memorial_id?: string | null
+          personal_statement?: string | null
+          relationship_to_deceased?: string | null
+          short_id?: string | null
+          slug?: string | null
+          status?: string | null
+          target_amount?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraisers_memorial_id_fkey"
+            columns: ["memorial_id"]
+            isOneToOne: false
+            referencedRelation: "memorial_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
