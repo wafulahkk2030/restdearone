@@ -24,12 +24,29 @@ const FamilyVerification = ({ memorialId, memorialName }: Props) => {
   useEffect(() => { loadVerifications(); }, [memorialId]);
 
   const loadVerifications = async () => {
-    const { data } = await supabase.from("family_verifications")
-      .select("*, profiles:user_id(display_name, username)")
+    // Public-safe view (no evidence_text). Owners/admins see their own request via separate query.
+    const { data: pub } = await supabase
+      .from("public_family_verifications")
+      .select("*")
       .eq("memorial_id", memorialId);
-    setVerifications(data || []);
+    let rows: any[] = pub || [];
+    if (rows.length > 0) {
+      const ids = [...new Set(rows.map((r: any) => r.user_id))];
+      const { data: profs } = await supabase
+        .from("public_profiles")
+        .select("id, display_name, username")
+        .in("id", ids);
+      const pmap = Object.fromEntries((profs || []).map((p: any) => [p.id, p]));
+      rows = rows.map((r: any) => ({ ...r, profiles: pmap[r.user_id] || {} }));
+    }
+    setVerifications(rows);
     if (user) {
-      const mine = (data || []).find((v: any) => v.user_id === user.id);
+      const { data: mine } = await supabase
+        .from("family_verifications")
+        .select("*")
+        .eq("memorial_id", memorialId)
+        .eq("user_id", user.id)
+        .maybeSingle();
       setMyRequest(mine || null);
     }
   };
