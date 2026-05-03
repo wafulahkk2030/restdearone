@@ -54,7 +54,7 @@ const CommunityPage = () => {
     setLoading(true);
     const [comRes, membersRes] = await Promise.all([
       supabase.from("community_groups").select("*").eq("id", id).single(),
-      supabase.from("community_members").select("*, profiles:user_id(display_name, username, country, avatar_url)").eq("community_id", id),
+      supabase.from("community_members").select("*, profiles:public_profiles!user_id(display_name, username, country, avatar_url)").eq("community_id", id),
     ]);
     setCommunity(comRes.data);
     setMembers(membersRes.data || []);
