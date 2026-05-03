@@ -23,7 +23,7 @@ const LettersSection = () => {
       if (data && data.length > 0) {
         // Fetch display names separately
         const authorIds = [...new Set(data.map(d => d.author_id))];
-        const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", authorIds);
+        const { data: profiles } = await supabase.from("public_profiles").select("id, display_name").in("id", authorIds);
         const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
         setLetters(data.map(d => ({ ...d, profiles: profileMap[d.author_id] || {} })));
       }
