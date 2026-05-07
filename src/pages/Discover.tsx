@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
+const PAGE_SIZE = 9;
+
 const Discover = () => {
   const [pages, setPages] = useState<any[]>([]);
   const [featured, setFeatured] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [discovering, setDiscovering] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     loadPages();
@@ -25,7 +28,7 @@ const Discover = () => {
       .select("id, full_name, birth_year, death_year, relationship_to_creator, personality_summary, status")
       .eq("status", "active" as any)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(60);
     setPages(data || []);
     setLoading(false);
   };
@@ -49,6 +52,12 @@ const Discover = () => {
   const filteredPages = search
     ? pages.filter(p => p.full_name.toLowerCase().includes(search.toLowerCase()))
     : pages;
+
+  const totalPages = Math.max(1, Math.ceil(filteredPages.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filteredPages.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,7 +108,7 @@ const Discover = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPages.map((page, i) => (
+              {paginated.map((page, i) => (
                 <motion.div
                   key={page.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -121,6 +130,20 @@ const Discover = () => {
                   {search ? "No matches found." : "No active memorial pages yet."}
                 </p>
               )}
+            </div>
+          )}
+
+          {!loading && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-10">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground font-body px-3">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                Next
+              </Button>
             </div>
           )}
         </div>
