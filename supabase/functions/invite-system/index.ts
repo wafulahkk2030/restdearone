@@ -11,11 +11,15 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { code, created_by, memorial_id, community_id } = await req.json();
+    const { code, memorial_id, community_id } = await req.json();
 
     if (code) {
       // Look up invite
-      const { data: invite } = await supabase.from("invites").select("*").eq("code", code).single();
+      const { data: invite } = await supabase
+        .from("invites")
+        .select("id, code, memorial_id, community_id, uses, created_at")
+        .eq("code", code)
+        .single();
       if (!invite) {
         return new Response(JSON.stringify({ error: "Invalid invite code" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -23,11 +27,20 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ invite }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Generate invite
+    // Generate invite - require auth and bind created_by to caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const authClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+    const { data: userData, error: userErr } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const inviteCode = crypto.randomUUID().slice(0, 8).toUpperCase();
     const { data, error } = await supabase.from("invites").insert({
       code: inviteCode,
-      created_by,
+      created_by: userData.user.id,
       memorial_id: memorial_id || null,
       community_id: community_id || null,
     }).select().single();
