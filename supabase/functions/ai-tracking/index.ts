@@ -88,6 +88,16 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const authClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+    const { data: userData, error: userErr } = await authClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const callerId = userData.user.id;
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -137,9 +147,10 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "track_activity") {
-      const { user_id, event_type, metadata } = data;
+      const { event_type, metadata } = data;
+      const user_id = callerId;
       await supabase.from("admin_activity_logs").insert({
-        admin_id: user_id || "00000000-0000-0000-0000-000000000000",
+        admin_id: user_id,
         action: `user_${event_type}`,
         target_type: "analytics",
         details: metadata,

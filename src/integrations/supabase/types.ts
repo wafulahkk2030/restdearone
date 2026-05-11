@@ -775,9 +775,6 @@ export type Database = {
           highlight_until: string | null
           id: string
           memorial_id: string | null
-          payout_account: string | null
-          payout_details: Json | null
-          payout_method: string | null
           personal_statement: string | null
           rejection_reason: string | null
           relationship_to_deceased: string | null
@@ -798,9 +795,6 @@ export type Database = {
           highlight_until?: string | null
           id?: string
           memorial_id?: string | null
-          payout_account?: string | null
-          payout_details?: Json | null
-          payout_method?: string | null
           personal_statement?: string | null
           rejection_reason?: string | null
           relationship_to_deceased?: string | null
@@ -821,9 +815,6 @@ export type Database = {
           highlight_until?: string | null
           id?: string
           memorial_id?: string | null
-          payout_account?: string | null
-          payout_details?: Json | null
-          payout_method?: string | null
           personal_statement?: string | null
           rejection_reason?: string | null
           relationship_to_deceased?: string | null
