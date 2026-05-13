@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -228,6 +229,11 @@ const CommunityPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{community?.name ? `${community.name} — RestDearOne Community` : 'Community — RestDearOne'}</title>
+        <meta name="description" content={community?.description ? `${community.description.slice(0, 155)}` : 'Join a memory community on RestDearOne to connect with others who share similar experiences.'} />
+        <link rel="canonical" href={`https://restdearone.lovable.app/community/${id}`} />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-3xl mx-auto">

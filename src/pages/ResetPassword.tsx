@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,11 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Set New Password — RestDearOne</title>
+        <meta name="description" content="Set a new password for your RestDearOne account." />
+        <link rel="canonical" href="https://restdearone.lovable.app/reset-password" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 flex items-center justify-center px-4">
         <div className="w-full max-w-md">

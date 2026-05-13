@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -35,6 +36,11 @@ const Explore = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Explore Living Memories — RestDearOne</title>
+        <meta name="description" content="Discover memorial pages, read stories, and explore the lives people are remembering on RestDearOne." />
+        <link rel="canonical" href="https://restdearone.lovable.app/explore" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">

@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -5,6 +6,11 @@ import { motion } from "framer-motion";
 const CommunityGuidelines = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Community Guidelines — RestDearOne</title>
+        <meta name="description" content="Our community guidelines ensure a respectful, safe space for remembrance and sharing." />
+        <link rel="canonical" href="https://restdearone.lovable.app/guidelines" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-3xl mx-auto">

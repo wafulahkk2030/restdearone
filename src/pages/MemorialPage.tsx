@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -381,6 +382,11 @@ const MemorialPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{memorial?.full_name ? `${memorial.full_name} — RestDearOne Memory Page` : 'Memory Page — RestDearOne'}</title>
+        <meta name="description" content={memorial?.personality_summary ? `${memorial.personality_summary.slice(0, 155)}` : 'A living memory page preserving the story, lessons, and memories of a loved one on RestDearOne.'} />
+        <link rel="canonical" href={`https://restdearone.lovable.app/memorial/${id}`} />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-3xl mx-auto">

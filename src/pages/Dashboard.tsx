@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +60,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Your Dashboard — RestDearOne</title>
+        <meta name="description" content="Manage your memorial pages, stories, communities, and notifications on RestDearOne." />
+        <link rel="canonical" href="https://restdearone.lovable.app/dashboard" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">

@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HeroSection from "@/components/home/HeroSection";
@@ -13,6 +14,11 @@ import CTASection from "@/components/home/CTASection";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>RestDearOne — Preserve the Stories of Loved Ones</title>
+        <meta name="description" content="Create living memorial pages, share stories, and join a global community remembering those who shaped our lives." />
+        <link rel="canonical" href="https://restdearone.lovable.app/" />
+      </Helmet>
       <Navbar />
       <HeroSection />
       <LivingMemoryFeed />

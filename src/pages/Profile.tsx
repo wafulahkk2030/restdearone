@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +74,11 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Your Profile — RestDearOne</title>
+        <meta name="description" content="View and manage your RestDearOne profile, memorials, stories, and community memberships." />
+        <link rel="canonical" href="https://restdearone.lovable.app/profile" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-2xl mx-auto">

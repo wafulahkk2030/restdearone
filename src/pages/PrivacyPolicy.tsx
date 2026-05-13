@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
@@ -5,6 +6,11 @@ import { motion } from "framer-motion";
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Privacy Policy — RestDearOne</title>
+        <meta name="description" content="Read the RestDearOne privacy policy to understand how we protect your data and memories." />
+        <link rel="canonical" href="https://restdearone.lovable.app/privacy" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-3xl mx-auto">

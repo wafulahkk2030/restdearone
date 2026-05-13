@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,6 +134,11 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Chat — RestDearOne</title>
+        <meta name="description" content="Connect through guided memory conversations on RestDearOne." />
+        <link rel="canonical" href="https://restdearone.lovable.app/chat" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-5xl mx-auto">
