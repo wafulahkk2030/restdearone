@@ -232,6 +232,11 @@ const FundraiserPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{fundraiser?.title ? `${fundraiser.title} — RestDearOne Fundraiser` : 'Fundraiser — RestDearOne'}</title>
+        <meta name="description" content={fundraiser?.description ? `${fundraiser.description.slice(0, 155)}` : 'Support a family through a memorial fundraiser on RestDearOne.'} />
+        <link rel="canonical" href={`https://restdearone.lovable.app/fundraise/${fundraiser?.id || id}`} />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-2xl mx-auto">
