@@ -48,6 +48,11 @@ const Signup = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Sign Up — RestDearOne</title>
+        <meta name="description" content="Join RestDearOne to create memorial pages, share memories, and connect with a community of remembrance." />
+        <link rel="canonical" href="https://restdearone.lovable.app/signup" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 flex items-center justify-center px-4">
         <div className="w-full max-w-md">

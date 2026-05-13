@@ -31,6 +31,11 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Reset Password — RestDearOne</title>
+        <meta name="description" content="Reset your RestDearOne account password." />
+        <link rel="canonical" href="https://restdearone.lovable.app/forgot-password" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 flex items-center justify-center px-4">
         <div className="w-full max-w-md text-center">

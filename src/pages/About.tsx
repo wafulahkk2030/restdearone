@@ -7,6 +7,11 @@ import { Heart, Users, BookOpen, Globe, Shield, Sparkles } from "lucide-react";
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>About RestDearOne — Our Mission</title>
+        <meta name="description" content="Learn about RestDearOne's mission to preserve every life story and build a global community of remembrance." />
+        <link rel="canonical" href="https://restdearone.lovable.app/about" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">

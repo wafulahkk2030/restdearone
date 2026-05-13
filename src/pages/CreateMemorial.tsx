@@ -185,6 +185,11 @@ const CreateMemorial = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Create a Memory Page — RestDearOne</title>
+        <meta name="description" content="Create a living memorial page to preserve the story, lessons, and memories of someone you love." />
+        <link rel="canonical" href="https://restdearone.lovable.app/create-memorial" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-2xl mx-auto">

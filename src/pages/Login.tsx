@@ -34,6 +34,11 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Sign In — RestDearOne</title>
+        <meta name="description" content="Sign in to your RestDearOne account to continue preserving the stories of your loved ones." />
+        <link rel="canonical" href="https://restdearone.lovable.app/login" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
