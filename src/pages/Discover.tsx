@@ -62,7 +62,12 @@ const Discover = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      
+      <Helmet>
+        <title>Discover Lives & Stories — RestDearOne</title>
+        <meta name="description" content="Find memorial pages and stories from around the world. Discover the lives that shaped our communities." />
+        <link rel="canonical" href="https://restdearone.lovable.app/discover" />
+      </Helmet>
+      <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">
           <motion.div className="text-center mb-10" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

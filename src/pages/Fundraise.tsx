@@ -140,6 +140,11 @@ const Fundraise = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Start a Fundraiser — RestDearOne</title>
+        <meta name="description" content="Start a fundraiser to support a family in need. Create and manage memorial fundraising campaigns." />
+        <link rel="canonical" href="https://restdearone.lovable.app/fundraise" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">

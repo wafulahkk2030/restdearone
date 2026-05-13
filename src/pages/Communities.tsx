@@ -90,6 +90,11 @@ const Communities = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Memory Communities — RestDearOne</title>
+        <meta name="description" content="Join memory communities to connect with others who share similar experiences of loss and remembrance." />
+        <link rel="canonical" href="https://restdearone.lovable.app/communities" />
+      </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">
