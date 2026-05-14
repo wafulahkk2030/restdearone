@@ -430,6 +430,18 @@ const FundraiserPage = () => {
               <Label className="font-body text-sm">Note to the family (optional)</Label>
               <Textarea placeholder="Your message of support..." value={noteToFamily} onChange={e => setNoteToFamily(e.target.value)} className="mt-1" maxLength={300} />
             </div>
+            {!user && (
+              <div className="space-y-2">
+                <div>
+                  <Label className="font-body text-sm">Your name (optional)</Label>
+                  <Input placeholder="Anonymous" value={guestName} onChange={e => setGuestName(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="font-body text-sm">Email for receipt *</Label>
+                  <Input type="email" placeholder="you@example.com" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} className="mt-1" required />
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Checkbox id="anonymous" checked={isAnonymous} onCheckedChange={(v) => setIsAnonymous(!!v)} />
               <label htmlFor="anonymous" className="text-sm font-body text-muted-foreground cursor-pointer">
