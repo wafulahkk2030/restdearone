@@ -29,6 +29,11 @@ import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ScrollToTop from "./components/ScrollToTop";
+import NationalLegends from "./pages/NationalLegends";
+import NationalLegendDetail from "./pages/NationalLegendDetail";
+import SubmitNationalLegend from "./pages/SubmitNationalLegend";
+import NewsletterPopup from "./components/NewsletterPopup";
+import InstallAppPrompt from "./components/InstallAppPrompt";
 
 const queryClient = new QueryClient();
 
@@ -65,8 +70,13 @@ const App = () => (
             <Route path="/support/:id" element={<FundraiserPage />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/national-legends" element={<NationalLegends />} />
+            <Route path="/national-legends/submit" element={<SubmitNationalLegend />} />
+            <Route path="/national-legends/:id" element={<NationalLegendDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <NewsletterPopup />
+          <InstallAppPrompt />
         </AuthProvider>
         </TranslationProvider>
       </BrowserRouter>
