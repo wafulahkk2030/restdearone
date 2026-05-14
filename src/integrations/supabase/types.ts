@@ -885,6 +885,56 @@ export type Database = {
           },
         ]
       }
+      legend_contributions: {
+        Row: {
+          amount: number
+          contribution_type: string
+          contributor_email: string | null
+          contributor_name: string
+          contributor_user_id: string | null
+          created_at: string
+          id: string
+          legend_id: string
+          message: string | null
+          payment_reference: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          contribution_type?: string
+          contributor_email?: string | null
+          contributor_name?: string
+          contributor_user_id?: string | null
+          created_at?: string
+          id?: string
+          legend_id: string
+          message?: string | null
+          payment_reference?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          contribution_type?: string
+          contributor_email?: string | null
+          contributor_name?: string
+          contributor_user_id?: string | null
+          created_at?: string
+          id?: string
+          legend_id?: string
+          message?: string | null
+          payment_reference?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legend_contributions_legend_id_fkey"
+            columns: ["legend_id"]
+            isOneToOne: false
+            referencedRelation: "national_legends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_embeds: {
         Row: {
           added_by: string
@@ -1164,6 +1214,144 @@ export type Database = {
           created_at?: string
           id?: string
           prompt_text?: string
+        }
+        Relationships: []
+      }
+      national_legends: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          banner_image_url: string | null
+          biography: string | null
+          birth_year: number | null
+          cause_of_death: string | null
+          created_at: string
+          current_fundraising_amount: number | null
+          current_tribute_amount: number | null
+          date_of_death: string | null
+          death_year: number
+          flower_min_amount: number | null
+          flower_price_tier: string | null
+          full_name: string
+          fundraising_target_amount: number | null
+          gallery_images: Json | null
+          id: string
+          is_official: boolean
+          location: string | null
+          national_impact_summary: string | null
+          partner_organizations: Json | null
+          quotes: Json | null
+          rejection_reason: string | null
+          slug: string | null
+          status: string
+          submitted_by: string | null
+          title: string | null
+          tribute_target_amount: number | null
+          updated_at: string
+          video_embed_url: string | null
+          view_count: number | null
+          visibility: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          banner_image_url?: string | null
+          biography?: string | null
+          birth_year?: number | null
+          cause_of_death?: string | null
+          created_at?: string
+          current_fundraising_amount?: number | null
+          current_tribute_amount?: number | null
+          date_of_death?: string | null
+          death_year: number
+          flower_min_amount?: number | null
+          flower_price_tier?: string | null
+          full_name: string
+          fundraising_target_amount?: number | null
+          gallery_images?: Json | null
+          id?: string
+          is_official?: boolean
+          location?: string | null
+          national_impact_summary?: string | null
+          partner_organizations?: Json | null
+          quotes?: Json | null
+          rejection_reason?: string | null
+          slug?: string | null
+          status?: string
+          submitted_by?: string | null
+          title?: string | null
+          tribute_target_amount?: number | null
+          updated_at?: string
+          video_embed_url?: string | null
+          view_count?: number | null
+          visibility?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          banner_image_url?: string | null
+          biography?: string | null
+          birth_year?: number | null
+          cause_of_death?: string | null
+          created_at?: string
+          current_fundraising_amount?: number | null
+          current_tribute_amount?: number | null
+          date_of_death?: string | null
+          death_year?: number
+          flower_min_amount?: number | null
+          flower_price_tier?: string | null
+          full_name?: string
+          fundraising_target_amount?: number | null
+          gallery_images?: Json | null
+          id?: string
+          is_official?: boolean
+          location?: string | null
+          national_impact_summary?: string | null
+          partner_organizations?: Json | null
+          quotes?: Json | null
+          rejection_reason?: string | null
+          slug?: string | null
+          status?: string
+          submitted_by?: string | null
+          title?: string | null
+          tribute_target_amount?: number | null
+          updated_at?: string
+          video_embed_url?: string | null
+          view_count?: number | null
+          visibility?: string
+        }
+        Relationships: []
+      }
+      newsletter_subscribers: {
+        Row: {
+          email: string
+          id: string
+          is_active: boolean
+          name: string | null
+          source: string | null
+          subscribed_at: string
+          user_id: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          source?: string | null
+          subscribed_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          source?: string | null
+          subscribed_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

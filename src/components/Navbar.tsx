@@ -12,6 +12,7 @@ const Navbar = () => {
   const navLinks = [
     { to: "/", label: "Home" },
     { to: "/explore", label: "Explore Stories" },
+    { to: "/national-legends", label: "National Legends" },
     { to: "/communities", label: "Communities" },
     { to: "/forum", label: "Forum" },
     { to: "/discover", label: "Discover a Life" },
