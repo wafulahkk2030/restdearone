@@ -13,19 +13,22 @@ Deno.serve(async (req: Request) => {
     const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!PAYSTACK_SECRET_KEY) throw new Error("PAYSTACK_SECRET_KEY not configured");
 
+    // Auth is OPTIONAL — guests may contribute without signing in
     const authHeader = req.headers.get("authorization");
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader! } } }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let user: { id: string; email?: string } | null = null;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) user = { id: data.user.id, email: data.user.email };
+      } catch (_) { /* treat as guest */ }
     }
 
-    const { action, fundraiser_id, amount, is_anonymous, note_to_family } = await req.json();
+    const { action, fundraiser_id, amount, is_anonymous, note_to_family, guest_email, guest_name } = await req.json();
 
     const serviceClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -41,9 +44,16 @@ Deno.serve(async (req: Request) => {
       // Full amount goes to the fundraiser total
       const grossAmount = amount;
 
-      // Get user profile
-      const { data: profile } = await serviceClient.from("profiles").select("email, display_name, username").eq("id", user.id).single();
-      const donorName = is_anonymous ? "Anonymous" : (profile?.display_name || profile?.username || "Anonymous");
+      // Resolve donor identity (guests must provide an email)
+      let donorEmail: string | null = guest_email || null;
+      let donorDisplay = (guest_name || "").trim() || "Anonymous";
+      if (user) {
+        const { data: profile } = await serviceClient.from("profiles").select("email, display_name, username").eq("id", user.id).single();
+        donorEmail = profile?.email || user.email || donorEmail;
+        donorDisplay = profile?.display_name || profile?.username || donorDisplay;
+      }
+      if (!donorEmail) throw new Error("Email is required to contribute as a guest");
+      const donorName = is_anonymous ? "Anonymous" : donorDisplay;
 
       // Generate reference
       const now = new Date();
@@ -54,8 +64,9 @@ Deno.serve(async (req: Request) => {
       // Create pending contribution — gross = net (no fee on contribution)
       await serviceClient.from("contributions").insert({
         fundraiser_id,
-        user_id: user.id,
+        user_id: user?.id ?? null,
         donor_name: donorName,
+        donor_email: donorEmail,
         gross_amount: grossAmount,
         platform_fee: 0,
         net_amount: grossAmount,
@@ -77,14 +88,14 @@ Deno.serve(async (req: Request) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: profile?.email || user.email,
+          email: donorEmail,
           amount: grossAmount * 100, // Convert to kobo/cents
           currency: "KES",
           reference,
           metadata: {
             type: "fundraiser_contribution",
             fundraiser_id,
-            user_id: user.id,
+            user_id: user?.id ?? null,
             donor_name: donorName,
             amount: grossAmount,
             is_anonymous: !!is_anonymous,

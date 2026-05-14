@@ -24,6 +24,8 @@ const BodySchema = z.object({
     "heaven_blossom","legacy_bouquet","celestial_garden",
   ]),
   tribute_note: z.string().trim().max(500).optional().nullable(),
+  guest_email: z.string().email().optional().nullable(),
+  guest_name: z.string().trim().min(1).max(100).optional().nullable(),
 });
 
 Deno.serve(async (req: Request) => {
@@ -33,23 +35,31 @@ Deno.serve(async (req: Request) => {
     const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!PAYSTACK_SECRET_KEY) throw new Error("PAYSTACK_SECRET_KEY not configured");
 
+    // Auth is OPTIONAL — guests may send tributes without signing in
     const authHeader = req.headers.get("authorization");
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader! } } }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let user: { id: string; email?: string } | null = null;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data } = await supabase.auth.getUser();
+        if (data?.user) user = { id: data.user.id, email: data.user.email };
+      } catch (_) { /* treat as guest */ }
     }
 
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) {
       return new Response(JSON.stringify({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const { memorial_id, flower_type, tribute_note } = parsed.data;
+    const { memorial_id, flower_type, tribute_note, guest_email, guest_name } = parsed.data;
+
+    // Guests must provide an email for the payment receipt
+    if (!user && !guest_email) {
+      return new Response(JSON.stringify({ error: "Email is required to send a tribute as a guest" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const tier = FLOWER_TIERS[flower_type];
     if (!tier) throw new Error("Invalid flower type");
@@ -60,15 +70,21 @@ Deno.serve(async (req: Request) => {
     const { data: memorial } = await serviceClient.from("memorial_pages").select("id, full_name").eq("id", memorial_id).single();
     if (!memorial) throw new Error("Memorial not found");
 
-    // Get user profile
-    const { data: profile } = await serviceClient.from("profiles").select("email, display_name, username").eq("id", user.id).single();
-    const senderName = profile?.display_name || profile?.username || "Anonymous";
+    // Resolve sender identity
+    let senderEmail: string | null = guest_email || null;
+    let senderName = guest_name?.trim() || "Anonymous";
+    if (user) {
+      const { data: profile } = await serviceClient.from("profiles").select("email, display_name, username").eq("id", user.id).single();
+      senderEmail = profile?.email || user.email || senderEmail;
+      senderName = profile?.display_name || profile?.username || senderName;
+    }
 
     // Create pending tribute
     await serviceClient.from("flower_tributes").insert({
       memorial_id,
-      sender_user_id: user.id,
+      sender_user_id: user?.id ?? null,
       sender_name: senderName,
+      sender_email: senderEmail,
       flower_type,
       tribute_value: tier.price,
       tribute_note: tribute_note || null,
@@ -83,12 +99,12 @@ Deno.serve(async (req: Request) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: profile?.email || user.email,
+        email: senderEmail,
         amount: tier.price * 100, // Convert to kobo/cents
         currency: "KES",
         metadata: {
           type: "flower_tribute",
-          user_id: user.id,
+          user_id: user?.id ?? null,
           memorial_id,
           flower_type,
           sender_name: senderName,

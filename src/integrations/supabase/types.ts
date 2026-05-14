@@ -422,6 +422,7 @@ export type Database = {
       contributions: {
         Row: {
           created_at: string
+          donor_email: string | null
           donor_name: string | null
           fundraiser_id: string
           gross_amount: number
@@ -436,6 +437,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          donor_email?: string | null
           donor_name?: string | null
           fundraiser_id: string
           gross_amount: number
@@ -450,6 +452,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          donor_email?: string | null
           donor_name?: string | null
           fundraiser_id?: string
           gross_amount?: number
@@ -527,8 +530,9 @@ export type Database = {
           id: string
           memorial_id: string
           payment_reference: string | null
+          sender_email: string | null
           sender_name: string
-          sender_user_id: string
+          sender_user_id: string | null
           status: string
           tribute_note: string | null
           tribute_value: number
@@ -539,8 +543,9 @@ export type Database = {
           id?: string
           memorial_id: string
           payment_reference?: string | null
+          sender_email?: string | null
           sender_name: string
-          sender_user_id: string
+          sender_user_id?: string | null
           status?: string
           tribute_note?: string | null
           tribute_value: number
@@ -551,8 +556,9 @@ export type Database = {
           id?: string
           memorial_id?: string
           payment_reference?: string | null
+          sender_email?: string | null
           sender_name?: string
-          sender_user_id?: string
+          sender_user_id?: string | null
           status?: string
           tribute_note?: string | null
           tribute_value?: number

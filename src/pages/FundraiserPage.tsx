@@ -28,6 +28,8 @@ const FundraiserPage = () => {
   const [noteToFamily, setNoteToFamily] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [contributing, setContributing] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ method: "mpesa", account: "" });
   const [payout, setPayout] = useState<any>(null);
@@ -134,9 +136,9 @@ const FundraiserPage = () => {
   };
 
   const handleContribute = async () => {
-    if (!user) { toast({ title: "Please sign in to contribute", variant: "destructive" }); return; }
     const amt = parseInt(amount);
     if (!amt || amt < 50) { toast({ title: "Minimum contribution is KES 50", variant: "destructive" }); return; }
+    if (!user && !guestEmail) { toast({ title: "Please enter your email for the receipt", variant: "destructive" }); return; }
     setContributing(true);
     try {
       const { data, error } = await supabase.functions.invoke("fundraising-engine", {
@@ -146,6 +148,8 @@ const FundraiserPage = () => {
           amount: amt,
           is_anonymous: isAnonymous,
           note_to_family: noteToFamily || null,
+          guest_email: user ? undefined : guestEmail,
+          guest_name: user ? undefined : guestName,
         },
       });
       if (error) throw error;
@@ -426,6 +430,18 @@ const FundraiserPage = () => {
               <Label className="font-body text-sm">Note to the family (optional)</Label>
               <Textarea placeholder="Your message of support..." value={noteToFamily} onChange={e => setNoteToFamily(e.target.value)} className="mt-1" maxLength={300} />
             </div>
+            {!user && (
+              <div className="space-y-2">
+                <div>
+                  <Label className="font-body text-sm">Your name (optional)</Label>
+                  <Input placeholder="Anonymous" value={guestName} onChange={e => setGuestName(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="font-body text-sm">Email for receipt *</Label>
+                  <Input type="email" placeholder="you@example.com" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} className="mt-1" required />
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Checkbox id="anonymous" checked={isAnonymous} onCheckedChange={(v) => setIsAnonymous(!!v)} />
               <label htmlFor="anonymous" className="text-sm font-body text-muted-foreground cursor-pointer">

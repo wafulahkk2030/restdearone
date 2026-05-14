@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,17 +28,25 @@ interface Props {
 const FlowerTributeDialog = ({ open, onOpenChange, memorialId, memorialName }: Props) => {
   const [selected, setSelected] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const handleSend = async () => {
-    if (!user) { toast({ title: "Please sign in first", variant: "destructive" }); return; }
     if (!selected) { toast({ title: "Please select a flower", variant: "destructive" }); return; }
+    if (!user && !guestEmail) { toast({ title: "Please enter your email for the receipt", variant: "destructive" }); return; }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-flower-tribute", {
-        body: { memorial_id: memorialId, flower_type: selected, tribute_note: note },
+        body: {
+          memorial_id: memorialId,
+          flower_type: selected,
+          tribute_note: note,
+          guest_email: user ? undefined : guestEmail,
+          guest_name: user ? undefined : guestName,
+        },
       });
       if (error) throw error;
       if (data?.authorization_url) {
@@ -85,6 +95,18 @@ const FlowerTributeDialog = ({ open, onOpenChange, memorialId, memorialName }: P
 
         {selected && (
           <div className="mt-4 space-y-3">
+            {!user && (
+              <div className="space-y-2">
+                <div>
+                  <Label className="font-body text-xs">Your name (optional)</Label>
+                  <Input placeholder="Anonymous" value={guestName} onChange={e => setGuestName(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="font-body text-xs">Email for receipt *</Label>
+                  <Input type="email" placeholder="you@example.com" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} className="mt-1" required />
+                </div>
+              </div>
+            )}
             <Textarea
               placeholder="Write an optional tribute note..."
               value={note}
