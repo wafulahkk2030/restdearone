@@ -28,6 +28,8 @@ const FundraiserPage = () => {
   const [noteToFamily, setNoteToFamily] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [contributing, setContributing] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ method: "mpesa", account: "" });
   const [payout, setPayout] = useState<any>(null);
@@ -134,9 +136,9 @@ const FundraiserPage = () => {
   };
 
   const handleContribute = async () => {
-    if (!user) { toast({ title: "Please sign in to contribute", variant: "destructive" }); return; }
     const amt = parseInt(amount);
     if (!amt || amt < 50) { toast({ title: "Minimum contribution is KES 50", variant: "destructive" }); return; }
+    if (!user && !guestEmail) { toast({ title: "Please enter your email for the receipt", variant: "destructive" }); return; }
     setContributing(true);
     try {
       const { data, error } = await supabase.functions.invoke("fundraising-engine", {
@@ -146,6 +148,8 @@ const FundraiserPage = () => {
           amount: amt,
           is_anonymous: isAnonymous,
           note_to_family: noteToFamily || null,
+          guest_email: user ? undefined : guestEmail,
+          guest_name: user ? undefined : guestName,
         },
       });
       if (error) throw error;
