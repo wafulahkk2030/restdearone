@@ -79,6 +79,12 @@ Deno.serve(async (req: Request) => {
       senderName = profile?.display_name || profile?.username || senderName;
     }
 
+    // Generate RDO reference for flower tributes
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
+    const randomCode = Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    const reference = `RDO-FLW-${dateStr}-${randomCode}`;
+
     // Create pending tribute
     await serviceClient.from("flower_tributes").insert({
       memorial_id,
@@ -89,6 +95,7 @@ Deno.serve(async (req: Request) => {
       tribute_value: tier.price,
       tribute_note: tribute_note || null,
       status: "pending",
+      payment_reference: reference,
     });
 
     // Initialize Paystack payment
@@ -102,6 +109,7 @@ Deno.serve(async (req: Request) => {
         email: senderEmail,
         amount: tier.price * 100, // Convert to kobo/cents
         currency: "KES",
+        reference,
         metadata: {
           type: "flower_tribute",
           user_id: user?.id ?? null,
