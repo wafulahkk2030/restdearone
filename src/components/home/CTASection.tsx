@@ -24,7 +24,7 @@ const CTASection = () => {
             Invite others to share memories and reflections.
           </p>
           <p className="text-sm text-muted-foreground/70 font-body mb-8">
-            KES 100 activates a Living Memory Page for 1 year with daily prompts.
+            Activate a Living Memory Page for 1 year with daily prompts.
           </p>
           <Link to="/create-memorial">
             <Button variant="hero">Create a Memory Page</Button>
