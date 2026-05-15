@@ -21,10 +21,14 @@ const Explore = () => {
     setLoading(true);
     const { data } = await supabase
       .from("memorial_pages")
-      .select("*")
+      .select("*, memorial_followers(count), stories(count)")
       .order("created_at", { ascending: false })
-      .limit(50);
-    setMemorials(data || []);
+      .limit(100);
+    const scored = (data || []).map((m: any) => ({
+      ...m,
+      _score: (m.memorial_followers?.[0]?.count || 0) * 2 + (m.stories?.[0]?.count || 0),
+    })).sort((a: any, b: any) => b._score - a._score).slice(0, 50);
+    setMemorials(scored);
     setLoading(false);
   };
 

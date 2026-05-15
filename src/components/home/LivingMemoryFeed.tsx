@@ -18,14 +18,15 @@ const LivingMemoryFeed = () => {
     const load = async () => {
       const { data: latest } = await supabase
         .from("memorial_pages")
-        .select("*")
+        .select("*, memorial_followers(count), stories(count)")
         .order("created_at", { ascending: false })
-        .limit(3);
+        .limit(30);
 
       const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       const newest = latest?.[0]?.created_at ? new Date(latest[0].created_at).getTime() : 0;
 
-      let chosen: any[] = latest || [];
+      const scoreOf = (m: any) => (m.memorial_followers?.[0]?.count || 0) * 2 + (m.stories?.[0]?.count || 0);
+      let chosen: any[] = [...(latest || [])].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 3);
 
       // If newest is older than 7 days, rotate from a larger pool (deterministic per-day)
       if (latest && latest.length > 0 && newest < sevenDaysAgo) {
