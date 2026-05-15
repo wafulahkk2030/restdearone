@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import { Plus, Trash2, Edit, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,19 +31,18 @@ const TimelineItem = ({ event, index, isOwner, onDelete, onEdit }: {
   onDelete: (id: string) => void;
   onEdit: (event: JourneyEvent) => void;
 }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
   const isLeft = index % 2 === 0;
 
   return (
-    <div ref={ref} className="relative flex items-start md:items-center gap-4 md:gap-0">
+    <div className="relative flex items-start md:items-center gap-4 md:gap-0">
       {/* Desktop: alternating layout */}
       <div className={`hidden md:flex w-full items-center ${isLeft ? '' : 'flex-row-reverse'}`}>
         {/* Content side */}
         <motion.div
           className="w-5/12"
           initial={{ opacity: 0, x: isLeft ? -60 : 60 }}
-          animate={isInView ? { opacity: 1, x: 0 } : {}}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           <div className={`bg-card border border-border rounded-xl p-6 ${isLeft ? 'text-right' : 'text-left'}`}>
@@ -66,7 +65,8 @@ const TimelineItem = ({ event, index, isOwner, onDelete, onEdit }: {
           <motion.div
             className="w-4 h-4 bg-primary rounded-full border-4 border-background z-10 shadow-lg"
             initial={{ scale: 0 }}
-            animate={isInView ? { scale: 1 } : {}}
+            whileInView={{ scale: 1 }}
+            viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.4, delay: 0.2 }}
           />
         </div>
@@ -81,7 +81,8 @@ const TimelineItem = ({ event, index, isOwner, onDelete, onEdit }: {
           <motion.div
             className="w-3 h-3 bg-primary rounded-full border-2 border-background z-10 shadow-md flex-shrink-0"
             initial={{ scale: 0 }}
-            animate={isInView ? { scale: 1 } : {}}
+            whileInView={{ scale: 1 }}
+            viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.3 }}
           />
           <div className="w-px bg-border flex-1 min-h-[20px]" />
@@ -89,7 +90,8 @@ const TimelineItem = ({ event, index, isOwner, onDelete, onEdit }: {
         <motion.div
           className="flex-1 pb-8"
           initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <span className="text-primary font-display text-xs font-semibold tracking-[0.2em]">{event.year}</span>
