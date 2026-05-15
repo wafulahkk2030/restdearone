@@ -12,6 +12,7 @@ interface Props {
 }
 
 const getEmbedType = (url: string): string => {
+  if (url.includes("drive.google.com")) return "gdrive";
   if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
   if (url.includes("soundcloud.com")) return "soundcloud";
   if (url.includes("vimeo.com")) return "vimeo";
@@ -26,6 +27,13 @@ const getYouTubeId = (url: string): string | null => {
 const getVimeoId = (url: string): string | null => {
   const match = url.match(/vimeo\.com\/(\d+)/);
   return match ? match[1] : null;
+};
+
+const getDriveId = (url: string): string | null => {
+  const m1 = url.match(/\/file\/d\/([^/]+)/);
+  if (m1) return m1[1];
+  const m2 = url.match(/[?&]id=([^&]+)/);
+  return m2 ? m2[1] : null;
 };
 
 const MediaEmbeds = ({ memorialId, isActive }: Props) => {
@@ -90,8 +98,8 @@ const MediaEmbeds = ({ memorialId, isActive }: Props) => {
 
       {showForm && (
         <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3">
-          <p className="text-xs text-muted-foreground font-body">Paste a YouTube, SoundCloud, or Vimeo link</p>
-          <Input placeholder="https://youtube.com/watch?v=..." value={url} onChange={e => setUrl(e.target.value)} />
+          <p className="text-xs text-muted-foreground font-body">Paste a Google Drive, YouTube, SoundCloud, or Vimeo link</p>
+          <Input placeholder="https://drive.google.com/file/d/..." value={url} onChange={e => setUrl(e.target.value)} />
           <Input placeholder="Title (optional)" value={title} onChange={e => setTitle(e.target.value)} />
           <div className="flex gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -106,10 +114,16 @@ const MediaEmbeds = ({ memorialId, isActive }: Props) => {
         {embeds.map(embed => {
           const ytId = embed.embed_type === "youtube" ? getYouTubeId(embed.embed_url) : null;
           const vimeoId = embed.embed_type === "vimeo" ? getVimeoId(embed.embed_url) : null;
+          const driveId = embed.embed_type === "gdrive" ? getDriveId(embed.embed_url) : null;
 
           return (
             <div key={embed.id} className="bg-card border border-border rounded-xl overflow-hidden">
-              {ytId ? (
+              {driveId ? (
+                <div className="aspect-video">
+                  <iframe src={`https://drive.google.com/file/d/${driveId}/preview`} className="w-full h-full" allow="autoplay" allowFullScreen
+                    title={embed.title || "Google Drive video"} loading="lazy" />
+                </div>
+              ) : ytId ? (
                 <div className="aspect-video">
                   <iframe src={`https://www.youtube.com/embed/${ytId}`} className="w-full h-full" allowFullScreen
                     title={embed.title || "YouTube video"} loading="lazy" />

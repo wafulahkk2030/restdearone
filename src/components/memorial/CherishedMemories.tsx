@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Camera, Trash2, X } from "lucide-react";
+import { Camera, Trash2, X, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,8 @@ const CherishedMemories = ({ memorialId, isActive }: Props) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
+  const [driveUrl, setDriveUrl] = useState("");
+  const [showDrive, setShowDrive] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
@@ -87,6 +89,27 @@ const CherishedMemories = ({ memorialId, isActive }: Props) => {
     loadPhotos();
   };
 
+  const addDrivePhoto = async () => {
+    if (!user || !driveUrl) return;
+    const m = driveUrl.match(/\/file\/d\/([^/]+)/) || driveUrl.match(/[?&]id=([^&]+)/);
+    if (!m) {
+      toast({ title: "Invalid Google Drive link", description: "Use a public file link.", variant: "destructive" });
+      return;
+    }
+    const photoUrl = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+    await supabase.from("memorial_photos" as any).insert({
+      memorial_id: memorialId,
+      photo_url: photoUrl,
+      caption: caption || null,
+      uploaded_by: user.id,
+    } as any);
+    setDriveUrl("");
+    setCaption("");
+    setShowDrive(false);
+    toast({ title: "Photo added from Drive!" });
+    loadPhotos();
+  };
+
   if (loading) return null;
   if (photos.length === 0 && !isActive && !isAdmin) return null;
 
@@ -99,15 +122,26 @@ const CherishedMemories = ({ memorialId, isActive }: Props) => {
 
       {/* Photo upload */}
       {(isActive || isAdmin) && user && (
-        <div className="flex items-center gap-3 mb-6 justify-center flex-wrap">
+        <div className="flex flex-col items-center gap-3 mb-6">
           <Input placeholder="Caption (optional)" value={caption} onChange={e => setCaption(e.target.value)} className="max-w-xs" />
-          <label className="cursor-pointer">
-            <Button variant="outline" size="sm" className="gap-1 pointer-events-none" disabled={uploading}>
-              <Camera className="w-4 h-4" />
-              {uploading ? "Uploading..." : "Share Photo"}
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            <Button asChild variant="outline" size="sm" className="gap-1" disabled={uploading}>
+              <label className="cursor-pointer">
+                <Camera className="w-4 h-4" />
+                {uploading ? "Uploading..." : "Upload Photo"}
+                <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+              </label>
             </Button>
-            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
-          </label>
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => setShowDrive(s => !s)}>
+              <Link2 className="w-4 h-4" /> Google Drive Link
+            </Button>
+          </div>
+          {showDrive && (
+            <div className="flex items-center gap-2 w-full max-w-md">
+              <Input placeholder="https://drive.google.com/file/d/..." value={driveUrl} onChange={e => setDriveUrl(e.target.value)} />
+              <Button variant="hero" size="sm" onClick={addDrivePhoto} disabled={!driveUrl}>Add</Button>
+            </div>
+          )}
         </div>
       )}
 
