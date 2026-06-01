@@ -3,10 +3,12 @@
   "short_name": "RestDearOne",
   "description": "Every life leaves a story. Preserve memories, celebrate lives.",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "background_color": "#0F1B2D",
   "theme_color": "#0F1B2D",
   "orientation": "portrait-primary",
+  "scope": "/",
   "icons": [
     {
       "src": "/app-icon.png",
