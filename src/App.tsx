@@ -34,6 +34,7 @@ import NationalLegendDetail from "./pages/NationalLegendDetail";
 import SubmitNationalLegend from "./pages/SubmitNationalLegend";
 import NewsletterPopup from "./components/NewsletterPopup";
 import InstallAppPrompt from "./components/InstallAppPrompt";
+import AppSplash from "./components/AppSplash";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <AppSplash />
         <TranslationProvider>
         <AuthProvider>
           <Routes>
