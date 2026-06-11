@@ -10,6 +10,26 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Require either service-role bearer (cron) or an authenticated admin JWT
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    let authorized = false;
+    if (token && token === serviceRoleKey) {
+      authorized = true;
+    } else if (token) {
+      const authClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+      const { data: userData } = await authClient.auth.getUser(token);
+      if (userData?.user) {
+        const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
+        const { data: isAdminRow } = await admin.rpc("is_admin", { _user_id: userData.user.id });
+        if (isAdminRow) authorized = true;
+      }
+    }
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
