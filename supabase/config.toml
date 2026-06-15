@@ -1,1 +1,7 @@
 project_id = "qgurgdkkwyhwjddiovst"
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.pay-legend-article]
+verify_jwt = true

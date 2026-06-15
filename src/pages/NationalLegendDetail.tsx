@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar, MessageCircle, ExternalLink, Send } from "lucide-react";
+import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar, MessageCircle, ExternalLink, Send, FileText, CreditCard } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NationalLegendDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
   const [legend, setLegend] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [contributions, setContributions] = useState<any[]>([]);
@@ -27,6 +29,11 @@ const NationalLegendDetail = () => {
   const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [articles, setArticles] = useState<any[]>([]);
+  const [myArticles, setMyArticles] = useState<any[]>([]);
+  const [artForm, setArtForm] = useState({ author_name: "", author_email: "", title: "", body: "", image_url: "", source_url: "" });
+  const [submittingArticle, setSubmittingArticle] = useState(false);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -56,10 +63,30 @@ const NationalLegendDetail = () => {
           .order("created_at", { ascending: false })
           .limit(200);
         setComments(cms || []);
+        const { data: arts } = await supabase
+          .from("legend_articles")
+          .select("id, title, body, image_url, source_url, author_name, created_at")
+          .eq("legend_id", data.id)
+          .eq("status", "approved")
+          .order("created_at", { ascending: false });
+        setArticles(arts || []);
       }
       setLoading(false);
     })();
   }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      if (!legend || !user) { setMyArticles([]); return; }
+      const { data } = await supabase
+        .from("legend_articles")
+        .select("*")
+        .eq("legend_id", legend.id)
+        .eq("submitted_by", user.id)
+        .order("created_at", { ascending: false });
+      setMyArticles(data || []);
+    })();
+  }, [legend, user]);
 
   const postComment = async () => {
     if (!legend) return;
@@ -106,12 +133,51 @@ const NationalLegendDetail = () => {
     setName(""); setEmail(""); setAmount(""); setMessage("");
   };
 
+  const submitArticle = async () => {
+    if (!legend) return;
+    const { author_name, author_email, title, body } = artForm;
+    if (!author_name.trim() || !author_email.includes("@") || title.trim().length < 4 || body.trim().length < 30) {
+      toast({ title: "Please fill name, email, title and a longer article body (30+ chars).", variant: "destructive" });
+      return;
+    }
+    setSubmittingArticle(true);
+    const { error, data } = await supabase.from("legend_articles").insert({
+      legend_id: legend.id,
+      submitted_by: user?.id ?? null,
+      author_name: author_name.trim(),
+      author_email: author_email.trim(),
+      title: title.trim(),
+      body: body.trim(),
+      image_url: artForm.image_url.trim() || null,
+      source_url: artForm.source_url.trim() || null,
+      status: "pending_review",
+    }).select("*").maybeSingle();
+    setSubmittingArticle(false);
+    if (error) { toast({ title: "Could not submit", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Submitted for review", description: "An admin will review and set the publishing fee. You'll be notified." });
+    setArtForm({ author_name: "", author_email: "", title: "", body: "", image_url: "", source_url: "" });
+    if (data && user) setMyArticles((p) => [data, ...p]);
+  };
+
+  const payForArticle = async (article_id: string) => {
+    setPayingId(article_id);
+    const { data, error } = await supabase.functions.invoke("pay-legend-article", { body: { article_id } });
+    setPayingId(null);
+    if (error || !data?.authorization_url) {
+      toast({ title: "Payment failed", description: (error as any)?.message || data?.error || "Try again", variant: "destructive" });
+      return;
+    }
+    window.location.href = data.authorization_url;
+  };
+
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="pt-28 text-center text-muted-foreground">Loading…</div></div>;
   if (!legend) return <div className="min-h-screen bg-background"><Navbar /><div className="pt-28 text-center"><p className="text-muted-foreground">Legend not found.</p><Button onClick={() => navigate("/national-legends")} className="mt-4">Back</Button></div></div>;
 
   const totalRaised = contributions.reduce((s, c) => s + (c.amount || 0), 0);
   const target = legend.tribute_target_amount || 0;
   const pct = target > 0 ? Math.min(100, Math.round((totalRaised / target) * 100)) : 0;
+  const isOwner = !!user && legend.submitted_by && user.id === legend.submitted_by;
+  const canSeePrivate = isOwner || isAdmin;
 
   return (
     <div className="min-h-screen bg-background">
@@ -210,6 +276,93 @@ const NationalLegendDetail = () => {
               </a>
             )}
 
+            {/* Articles & Tributes (community-submitted, admin-approved) */}
+            <div id="articles" className="pt-6 border-t border-border space-y-6">
+              <div>
+                <h2 className="font-display text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" /> Articles & Tributes
+                </h2>
+                <p className="text-sm text-muted-foreground font-body">
+                  Stories and articles about {legend.full_name} submitted by the public. Each article is reviewed by an admin, who sets a small publishing fee before it appears here.
+                </p>
+              </div>
+
+              {articles.length === 0 && (
+                <p className="text-sm text-muted-foreground font-body italic">No articles yet — be the first to share one.</p>
+              )}
+              <div className="space-y-5">
+                {articles.map((a) => (
+                  <article key={a.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+                    {a.image_url && <img src={a.image_url} alt={a.title} className="w-full max-h-72 object-cover" loading="lazy" />}
+                    <div className="p-5">
+                      <h3 className="font-display text-xl font-bold text-foreground">{a.title}</h3>
+                      <p className="text-xs text-muted-foreground font-body mt-1">By {a.author_name} · {new Date(a.created_at).toLocaleDateString()}</p>
+                      <p className="text-sm text-foreground/90 font-body mt-3 whitespace-pre-line leading-relaxed">{a.body}</p>
+                      {a.source_url && (
+                        <a href={a.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary mt-3 underline font-body">
+                          Source <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {/* My submissions (signed-in author) */}
+              {user && myArticles.length > 0 && (
+                <div className="bg-card/60 border border-border rounded-2xl p-5">
+                  <h3 className="font-display text-base font-semibold text-foreground mb-3">Your submissions</h3>
+                  <div className="space-y-3">
+                    {myArticles.map((a) => (
+                      <div key={a.id} className="border border-border rounded-lg p-3">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="font-body text-sm font-medium text-foreground">{a.title}</p>
+                            <p className="text-xs text-muted-foreground font-body capitalize">
+                              Status: {a.status.replace(/_/g, " ")}
+                              {a.price_amount > 0 && ` · Fee KES ${a.price_amount.toLocaleString()}`}
+                            </p>
+                            {a.admin_notes && <p className="text-xs text-muted-foreground font-body italic mt-1">Admin note: {a.admin_notes}</p>}
+                            {a.rejection_reason && <p className="text-xs text-destructive font-body italic mt-1">Rejected: {a.rejection_reason}</p>}
+                          </div>
+                          {a.status === "awaiting_payment" && (
+                            <Button size="sm" variant="hero" onClick={() => payForArticle(a.id)} disabled={payingId === a.id} className="gap-1">
+                              <CreditCard className="w-3.5 h-3.5" />
+                              {payingId === a.id ? "Redirecting…" : `Pay KES ${a.price_amount.toLocaleString()}`}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Submit form */}
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+                <h3 className="font-display text-base font-semibold text-foreground">Submit an article</h3>
+                <p className="text-xs text-muted-foreground font-body">
+                  After review, an admin will set a small publishing fee. Pay it and your article appears here. {!user && "Sign in so you can track status and pay later."}
+                </p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Input placeholder="Your name" value={artForm.author_name} onChange={(e) => setArtForm({ ...artForm, author_name: e.target.value })} />
+                  <Input type="email" placeholder="Your email" value={artForm.author_email} onChange={(e) => setArtForm({ ...artForm, author_email: e.target.value })} />
+                </div>
+                <Input placeholder="Article title" value={artForm.title} onChange={(e) => setArtForm({ ...artForm, title: e.target.value })} maxLength={140} />
+                <Textarea placeholder="Write your article…" rows={6} value={artForm.body} onChange={(e) => setArtForm({ ...artForm, body: e.target.value })} maxLength={8000} />
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Input placeholder="Image URL (optional)" value={artForm.image_url} onChange={(e) => setArtForm({ ...artForm, image_url: e.target.value })} />
+                  <Input placeholder="Source link (optional)" value={artForm.source_url} onChange={(e) => setArtForm({ ...artForm, source_url: e.target.value })} />
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="hero" onClick={submitArticle} disabled={submittingArticle} className="gap-2">
+                    <Send className="w-4 h-4" />
+                    {submittingArticle ? "Submitting…" : "Submit for review"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             {/* Public comment / tribute wall — open to everyone */}
             <div id="comments" className="pt-6 border-t border-border">
               <h2 className="font-display text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
@@ -263,7 +416,7 @@ const NationalLegendDetail = () => {
           <aside className="space-y-6">
             <div className="bg-card border border-border rounded-2xl p-6 sticky top-24">
               <h3 className="font-display text-lg font-bold text-foreground flex items-center gap-2"><Heart className="w-5 h-5 text-primary" /> Honor their memory</h3>
-              {target > 0 && (
+              {canSeePrivate && target > 0 && (
                 <div className="mt-4">
                   <div className="flex justify-between text-xs font-body text-muted-foreground"><span>Raised</span><span>KES {totalRaised.toLocaleString()} / {target.toLocaleString()}</span></div>
                   <div className="h-2 bg-muted rounded-full mt-2 overflow-hidden">
@@ -283,7 +436,7 @@ const NationalLegendDetail = () => {
               </div>
             </div>
 
-            {contributions.length > 0 && (
+            {canSeePrivate && contributions.length > 0 && (
               <div className="bg-card border border-border rounded-2xl p-5">
                 <h4 className="font-display text-sm font-semibold text-foreground mb-3">Recent tributes</h4>
                 <div className="space-y-3 max-h-80 overflow-y-auto">

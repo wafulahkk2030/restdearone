@@ -885,6 +885,80 @@ export type Database = {
           },
         ]
       }
+      legend_articles: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          author_email: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          image_url: string | null
+          legend_id: string
+          paid_at: string | null
+          payment_reference: string | null
+          price_amount: number
+          rejection_reason: string | null
+          source_url: string | null
+          status: string
+          submitted_by: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          author_email: string
+          author_name: string
+          body: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          legend_id: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          price_amount?: number
+          rejection_reason?: string | null
+          source_url?: string | null
+          status?: string
+          submitted_by?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          author_email?: string
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          legend_id?: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          price_amount?: number
+          rejection_reason?: string | null
+          source_url?: string | null
+          status?: string
+          submitted_by?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legend_articles_legend_id_fkey"
+            columns: ["legend_id"]
+            isOneToOne: false
+            referencedRelation: "national_legends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legend_contributions: {
         Row: {
           amount: number
