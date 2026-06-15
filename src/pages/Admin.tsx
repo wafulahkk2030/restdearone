@@ -18,9 +18,10 @@ import AdminPayments from "@/components/admin/AdminPayments";
 import AdminContacted from "@/components/admin/AdminContacted";
 import AdminFundraisers from "@/components/admin/AdminFundraisers";
 import AdminNationalLegends from "@/components/admin/AdminNationalLegends";
+import AdminLegendArticles from "@/components/admin/AdminLegendArticles";
 import AdminNewsletter from "@/components/admin/AdminNewsletter";
 
-type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "fundraisers" | "legends" | "newsletter" | "logs" | "notifications" | "contacted";
+type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "fundraisers" | "legends" | "legend_articles" | "newsletter" | "logs" | "notifications" | "contacted";
 
 const Admin = () => {
   const { user, isAdmin, adminRole, loading: authLoading } = useAuth();
@@ -183,6 +184,7 @@ const Admin = () => {
     { key: "payments", label: "Payments", icon: CreditCard },
     { key: "fundraisers", label: "Fundraisers", icon: Heart },
     { key: "legends", label: "National Legends", icon: Flag },
+    { key: "legend_articles", label: "Legend Articles", icon: BookOpen },
     { key: "newsletter", label: "Newsletter", icon: Mail },
     { key: "notifications", label: "Send Notification", icon: Bell },
     { key: "contacted", label: "Contacted", icon: Mail },
@@ -263,6 +265,7 @@ const Admin = () => {
           {tab === "payments" && <AdminPayments />}
           {tab === "fundraisers" && <AdminFundraisers userId={user!.id} />}
           {tab === "legends" && <AdminNationalLegends />}
+          {tab === "legend_articles" && <AdminLegendArticles />}
           {tab === "newsletter" && <AdminNewsletter />}
           {tab === "contacted" && <AdminContacted />}
 
