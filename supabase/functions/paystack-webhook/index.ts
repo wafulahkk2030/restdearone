@@ -146,33 +146,6 @@ Deno.serve(async (req: Request) => {
       }
 
     } else if (metadata.type === "fundraiser_contribution") {
-      // Handled below
-    } else if (metadata.type === "legend_article") {
-      await supabase.from("legend_articles").update({
-        status: "paid",
-        paid_at: new Date().toISOString(),
-        payment_reference: reference,
-      }).eq("id", metadata.article_id);
-
-      // Notify the submitter
-      if (metadata.user_id) {
-        await supabase.from("notifications").insert({
-          user_id: metadata.user_id,
-          message: "Your article payment was successful. It will appear on the legend's page once an admin approves it.",
-          link: `/national-legends`,
-        });
-      }
-
-      // Notify admins to approve
-      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
-      for (const admin of (admins || [])) {
-        await supabase.from("notifications").insert({
-          user_id: admin.user_id,
-          message: "A paid National Legend article is awaiting your final approval.",
-          link: `/admin`,
-        });
-      }
-    } else if (metadata.type === "__never__") {
       // Prevent duplicate processing
       const { data: contribution } = await supabase.from("contributions")
         .select("*")
@@ -207,6 +180,29 @@ Deno.serve(async (req: Request) => {
             link: `/fundraise/${contribution.fundraiser_id}`,
           });
         }
+      }
+    } else if (metadata.type === "legend_article") {
+      await supabase.from("legend_articles").update({
+        status: "paid",
+        paid_at: new Date().toISOString(),
+        payment_reference: reference,
+      }).eq("id", metadata.article_id);
+
+      if (metadata.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: metadata.user_id,
+          message: "Your article payment was successful. It will appear on the legend's page once an admin approves it.",
+          link: `/national-legends`,
+        });
+      }
+
+      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
+      for (const admin of (admins || [])) {
+        await supabase.from("notifications").insert({
+          user_id: admin.user_id,
+          message: "A paid National Legend article is awaiting your final approval.",
+          link: `/admin`,
+        });
       }
     }
 
