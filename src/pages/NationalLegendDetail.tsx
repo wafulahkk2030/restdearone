@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar } from "lucide-react";
+import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar, MessageCircle, ExternalLink, Send } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,10 @@ const NationalLegendDetail = () => {
   const [legend, setLegend] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [contributions, setContributions] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentName, setCommentName] = useState("");
+  const [commentText, setCommentText] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [amount, setAmount] = useState("");
@@ -39,13 +43,44 @@ const NationalLegendDetail = () => {
           .select("*")
           .eq("legend_id", data.id)
           .eq("status", "completed")
+          .eq("contribution_type", "tribute")
           .order("created_at", { ascending: false })
           .limit(50);
         setContributions(cs || []);
+        const { data: cms } = await supabase
+          .from("legend_contributions")
+          .select("id, contributor_name, message, created_at")
+          .eq("legend_id", data.id)
+          .eq("contribution_type", "comment")
+          .eq("status", "completed")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        setComments(cms || []);
       }
       setLoading(false);
     })();
   }, [id]);
+
+  const postComment = async () => {
+    if (!legend) return;
+    const text = commentText.trim();
+    if (text.length < 2) { toast({ title: "Please write a short message", variant: "destructive" }); return; }
+    setPostingComment(true);
+    const display = commentName.trim() || "Anonymous";
+    const { data, error } = await supabase.from("legend_contributions").insert({
+      legend_id: legend.id,
+      contributor_name: display,
+      contribution_type: "comment",
+      amount: 0,
+      message: text,
+      status: "completed",
+    }).select("id, contributor_name, message, created_at").maybeSingle();
+    setPostingComment(false);
+    if (error) { toast({ title: "Could not post comment", description: error.message, variant: "destructive" }); return; }
+    setComments((prev) => (data ? [data, ...prev] : prev));
+    setCommentName(""); setCommentText("");
+    toast({ title: "Thank you 🌿", description: "Your message has been shared." });
+  };
 
   const submitTribute = async () => {
     if (!legend) return;
@@ -162,6 +197,66 @@ const NationalLegendDetail = () => {
                 </div>
               </div>
             )}
+
+            {legend.slug === "raila-odinga" && (
+              <a
+                href="https://railaodinga.go.ke/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-sm font-body transition-colors"
+              >
+                Visit the official Raila Odinga website
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+
+            {/* Public comment / tribute wall — open to everyone */}
+            <div id="comments" className="pt-6 border-t border-border">
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-primary" /> A Nation Remembers
+              </h2>
+              <p className="text-sm text-muted-foreground font-body mb-5">
+                Leave a message in honour of {legend.full_name}. Open to everyone — no sign-in needed.
+              </p>
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+                <Input
+                  placeholder="Your name (optional)"
+                  value={commentName}
+                  onChange={(e) => setCommentName(e.target.value)}
+                  maxLength={80}
+                />
+                <Textarea
+                  placeholder="Share a memory, condolence, or tribute…"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  rows={4}
+                  maxLength={1000}
+                />
+                <div className="flex justify-end">
+                  <Button variant="hero" onClick={postComment} disabled={postingComment} className="gap-2">
+                    <Send className="w-4 h-4" />
+                    {postingComment ? "Posting…" : "Post message"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {comments.length === 0 && (
+                  <p className="text-sm text-muted-foreground font-body italic">Be the first to leave a tribute.</p>
+                )}
+                {comments.map((c) => (
+                  <div key={c.id} className="bg-card/60 border border-border rounded-xl p-4">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-body font-semibold text-sm text-foreground">{c.contributor_name}</span>
+                      <span className="text-xs text-muted-foreground font-body">
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-body mt-1 whitespace-pre-line leading-relaxed">{c.message}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Tribute sidebar */}
