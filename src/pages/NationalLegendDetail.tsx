@@ -118,19 +118,21 @@ const NationalLegendDetail = () => {
       return;
     }
     setSending(true);
-    const { error } = await supabase.from("legend_contributions").insert({
-      legend_id: legend.id,
-      contributor_name: name.trim() || "Anonymous",
-      contributor_email: email.trim(),
-      contribution_type: "tribute",
-      amount: amt,
-      message: message.trim() || null,
-      status: "pending",
+    const { data, error } = await supabase.functions.invoke("pay-legend-tribute", {
+      body: {
+        legend_id: legend.id,
+        contributor_name: name.trim() || "Anonymous",
+        contributor_email: email.trim(),
+        amount: amt,
+        message: message.trim() || null,
+      },
     });
     setSending(false);
-    if (error) { toast({ title: "Could not record tribute", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Thank you 🌿", description: "Your tribute has been recorded. Payment processing coming soon." });
-    setName(""); setEmail(""); setAmount(""); setMessage("");
+    if (error || !data?.authorization_url) {
+      toast({ title: "Could not start payment", description: error?.message || data?.error || "Please try again.", variant: "destructive" });
+      return;
+    }
+    window.location.href = data.authorization_url;
   };
 
   const submitArticle = async () => {
