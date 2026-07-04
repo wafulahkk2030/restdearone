@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.pay-legend-article]
 verify_jwt = true
+
+[functions.pay-legend-tribute]
+verify_jwt = false
