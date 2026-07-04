@@ -187,6 +187,21 @@ Deno.serve(async (req: Request) => {
         paid_at: new Date().toISOString(),
         payment_reference: reference,
       }).eq("id", metadata.article_id);
+    } else if (metadata.type === "legend_tribute") {
+      await supabase.from("legend_contributions").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
+      const { data: legend } = await supabase.from("national_legends").select("current_tribute_amount, full_name").eq("id", metadata.legend_id).single();
+      if (legend) {
+        const newTotal = (legend.current_tribute_amount || 0) + Number(metadata.amount || 0);
+        await supabase.from("national_legends").update({ current_tribute_amount: newTotal }).eq("id", metadata.legend_id);
+        const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
+        for (const admin of (admins || [])) {
+          await supabase.from("notifications").insert({
+            user_id: admin.user_id,
+            message: `New tribute for ${legend.full_name}: KES ${Number(metadata.amount).toLocaleString()} from ${metadata.contributor_name || "Anonymous"}.`,
+            link: `/national-legends`,
+          });
+        }
+      }
 
       if (metadata.user_id) {
         await supabase.from("notifications").insert({
