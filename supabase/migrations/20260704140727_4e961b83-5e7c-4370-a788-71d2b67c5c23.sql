@@ -1,0 +1,1 @@
+UPDATE public.national_legends SET banner_image_url = '/raila-odinga-portrait.png', gallery_images = '["/raila-odinga-bw.webp"]'::jsonb WHERE slug = 'raila-odinga';
