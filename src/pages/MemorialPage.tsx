@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2, Shield, Save } from "lucide-react";
+import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2, Shield, Save, Trash2 } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 import FlowerTributeDialog from "@/components/memorial/FlowerTributeDialog";
 import JourneyTimeline from "@/components/memorial/JourneyTimeline";
@@ -53,6 +53,11 @@ const MemorialPage = () => {
   const [activating, setActivating] = useState(false);
   const [showFlowerDialog, setShowFlowerDialog] = useState(false);
   const [storyPaymentInfo, setStoryPaymentInfo] = useState<{ required: boolean; amount: number; freeRemaining: number } | null>(null);
+  const [storyComments, setStoryComments] = useState<Record<string, any[]>>({});
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [commentEditText, setCommentEditText] = useState("");
   const [editingMemorial, setEditingMemorial] = useState(false);
   const [memorialEditForm, setMemorialEditForm] = useState({
     full_name: "", personality_summary: "", common_phrase: "", life_lesson: "",
@@ -61,6 +66,18 @@ const MemorialPage = () => {
 
   const isActive = memorial?.status === 'active';
   const isOwner = user?.id === memorial?.created_by;
+
+  const hasStoryPostingCredit = async () => {
+    if (!user || !id) return false;
+    const { data } = await supabase.from("payments").select("id")
+      .eq("user_id", user.id)
+      .eq("memorial_id", id)
+      .eq("payment_type" as any, "story_posting")
+      .eq("status", "completed")
+      .is("consumed_at" as any, null)
+      .maybeSingle();
+    return !!data;
+  };
 
   // Poll for status update after returning from payment
   useEffect(() => {
@@ -130,6 +147,10 @@ const MemorialPage = () => {
       setStoryPaymentInfo({ required: false, amount: 0, freeRemaining: 999 });
       return;
     }
+    if (await hasStoryPostingCredit()) {
+      setStoryPaymentInfo({ required: false, amount: 0, freeRemaining: 1 });
+      return;
+    }
     const { count } = await supabase.from("stories").select("id", { count: "exact", head: true })
       .eq("author_id", user.id).eq("memorial_id", id);
     const storyCount = count || 0;
@@ -171,6 +192,19 @@ const MemorialPage = () => {
         grouped[r.story_id].push(r);
       });
       setReactions(grouped);
+      const { data: comments } = await supabase.from("story_comments")
+        .select("*, profiles:author_id(display_name, username)")
+        .in("story_id", storyIds)
+        .order("created_at", { ascending: true });
+      const groupedComments: Record<string, any[]> = {};
+      (comments || []).forEach((comment: any) => {
+        if (!groupedComments[comment.story_id]) groupedComments[comment.story_id] = [];
+        groupedComments[comment.story_id].push(comment);
+      });
+      setStoryComments(groupedComments);
+    } else {
+      setReactions({});
+      setStoryComments({});
     }
 
     if (user) {
