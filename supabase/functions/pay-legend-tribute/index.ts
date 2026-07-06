@@ -18,8 +18,8 @@ const Body = z.object({
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
-    if (!PAYSTACK_SECRET_KEY) throw new Error("PAYSTACK_SECRET_KEY not configured");
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY") || Deno.env.get("SK_PAYSTACK");
+    if (!PAYSTACK_SECRET_KEY) throw new Error("Payment secret key is not configured");
 
     // Optional auth — guests may contribute
     const authHeader = req.headers.get("authorization");
@@ -37,10 +37,10 @@ Deno.serve(async (req: Request) => {
     const { legend_id, contributor_name, contributor_email, amount, message } = parsed.data;
 
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: legend } = await service.from("national_legends").select("id, full_name, flower_min_amount").eq("id", legend_id).single();
-    if (!legend) throw new Error("Legend not found");
+    const { data: legend } = await service.from("national_legends").select("id, full_name, flower_min_amount").eq("id", legend_id).maybeSingle();
+    if (!legend) return new Response(JSON.stringify({ error: "Legend not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const minAmount = legend.flower_min_amount || 100;
-    if (amount < minAmount) throw new Error(`Minimum tribute is KES ${minAmount}`);
+    if (amount < minAmount) return new Response(JSON.stringify({ error: `Minimum tribute is KES ${minAmount}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
       }),
     });
     const json = await res.json();
-    if (!json.status) throw new Error(json.message || "Paystack error");
+    if (!json.status) return new Response(JSON.stringify({ error: json.message || "Payment provider error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     return new Response(JSON.stringify({ authorization_url: json.data.authorization_url, reference }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

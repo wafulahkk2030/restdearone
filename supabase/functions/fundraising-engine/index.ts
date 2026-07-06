@@ -10,8 +10,8 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
-    if (!PAYSTACK_SECRET_KEY) throw new Error("PAYSTACK_SECRET_KEY not configured");
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY") || Deno.env.get("SK_PAYSTACK");
+    if (!PAYSTACK_SECRET_KEY) throw new Error("Payment secret key is not configured");
 
     // Auth is OPTIONAL — guests may contribute without signing in
     const authHeader = req.headers.get("authorization");
