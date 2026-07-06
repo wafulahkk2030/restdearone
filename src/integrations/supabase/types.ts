@@ -579,21 +579,27 @@ export type Database = {
           comment: string
           created_at: string
           id: string
+          parent_comment_id: string | null
           post_id: string
+          updated_at: string
         }
         Insert: {
           author_id: string
           comment: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           post_id: string
+          updated_at?: string
         }
         Update: {
           author_id?: string
           comment?: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           post_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -608,6 +614,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "forum_comments"
             referencedColumns: ["id"]
           },
           {
@@ -627,6 +640,7 @@ export type Database = {
           created_at: string
           id: string
           title: string
+          updated_at: string
         }
         Insert: {
           author_id: string
@@ -635,6 +649,7 @@ export type Database = {
           created_at?: string
           id?: string
           title: string
+          updated_at?: string
         }
         Update: {
           author_id?: string
@@ -643,6 +658,7 @@ export type Database = {
           created_at?: string
           id?: string
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1459,31 +1475,37 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          consumed_at: string | null
           created_at: string
           currency: string
           id: string
           memorial_id: string
           payment_reference: string | null
+          payment_type: string
           status: string
           user_id: string
         }
         Insert: {
           amount?: number
+          consumed_at?: string | null
           created_at?: string
           currency?: string
           id?: string
           memorial_id: string
           payment_reference?: string | null
+          payment_type?: string
           status?: string
           user_id: string
         }
         Update: {
           amount?: number
+          consumed_at?: string | null
           created_at?: string
           currency?: string
           id?: string
           memorial_id?: string
           payment_reference?: string | null
+          payment_type?: string
           status?: string
           user_id?: string
         }
@@ -1662,6 +1684,7 @@ export type Database = {
           memorial_id: string
           story_type: Database["public"]["Enums"]["story_type"]
           title: string
+          updated_at: string
         }
         Insert: {
           author_id: string
@@ -1672,6 +1695,7 @@ export type Database = {
           memorial_id: string
           story_type?: Database["public"]["Enums"]["story_type"]
           title: string
+          updated_at?: string
         }
         Update: {
           author_id?: string
@@ -1682,6 +1706,7 @@ export type Database = {
           memorial_id?: string
           story_type?: Database["public"]["Enums"]["story_type"]
           title?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1713,21 +1738,27 @@ export type Database = {
           comment: string
           created_at: string
           id: string
+          parent_comment_id: string | null
           story_id: string
+          updated_at: string
         }
         Insert: {
           author_id: string
           comment: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           story_id: string
+          updated_at?: string
         }
         Update: {
           author_id?: string
           comment?: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           story_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1742,6 +1773,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "story_comments"
             referencedColumns: ["id"]
           },
           {
