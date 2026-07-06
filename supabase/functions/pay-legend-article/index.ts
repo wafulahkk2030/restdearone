@@ -12,8 +12,8 @@ const Body = z.object({ article_id: z.string().uuid() });
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
-    if (!PAYSTACK_SECRET_KEY) throw new Error("PAYSTACK_SECRET_KEY not configured");
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY") || Deno.env.get("SK_PAYSTACK");
+    if (!PAYSTACK_SECRET_KEY) throw new Error("Payment secret key is not configured");
 
     const authHeader = req.headers.get("authorization");
     const supabase = createClient(
@@ -28,11 +28,11 @@ Deno.serve(async (req: Request) => {
     if (!parsed.success) return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: article } = await service.from("legend_articles").select("*").eq("id", parsed.data.article_id).single();
-    if (!article) throw new Error("Article not found");
+    const { data: article } = await service.from("legend_articles").select("*").eq("id", parsed.data.article_id).maybeSingle();
+    if (!article) return new Response(JSON.stringify({ error: "Article not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (article.submitted_by !== user.id) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    if (article.status !== "awaiting_payment") throw new Error("Article is not awaiting payment");
-    if (!article.price_amount || article.price_amount < 1) throw new Error("Price not set by admin yet");
+    if (article.status !== "awaiting_payment") return new Response(JSON.stringify({ error: "Article is not awaiting payment" }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!article.price_amount || article.price_amount < 1) return new Response(JSON.stringify({ error: "Price not set by admin yet" }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
@@ -54,7 +54,7 @@ Deno.serve(async (req: Request) => {
       }),
     });
     const json = await res.json();
-    if (!json.status) throw new Error(json.message || "Paystack error");
+    if (!json.status) return new Response(JSON.stringify({ error: json.message || "Payment provider error" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     return new Response(JSON.stringify({ authorization_url: json.data.authorization_url, reference }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

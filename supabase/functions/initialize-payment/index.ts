@@ -19,8 +19,8 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
-    if (!PAYSTACK_SECRET_KEY) throw new Error("PAYSTACK_SECRET_KEY not configured");
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY") || Deno.env.get("SK_PAYSTACK");
+    if (!PAYSTACK_SECRET_KEY) throw new Error("Payment secret key is not configured");
 
     const authHeader = req.headers.get("authorization");
     const supabase = createClient(
@@ -66,6 +66,7 @@ Deno.serve(async (req: Request) => {
         memorial_id,
         amount: 100,
         currency: "KES",
+        payment_type: "memorial",
         status: "pending",
         payment_reference: customReference,
       });
@@ -94,6 +95,7 @@ Deno.serve(async (req: Request) => {
         memorial_id,
         amount: serverAmount,
         currency: "KES",
+        payment_type: "memorial_creation",
         status: "pending",
         payment_reference: customReference,
       });
@@ -108,6 +110,18 @@ Deno.serve(async (req: Request) => {
       const storyCount = count || 0;
       const positionInGroup = storyCount % 3;
       const groupNumber = Math.floor(storyCount / 3);
+      const { data: existingCredit } = await serviceClient.from("payments")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("memorial_id", memorial_id)
+        .eq("payment_type", "story_posting")
+        .eq("status", "completed")
+        .is("consumed_at", null)
+        .maybeSingle();
+
+      if (existingCredit) {
+        return new Response(JSON.stringify({ paid_credit_available: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       
       if (positionInGroup !== 2) {
         throw new Error("Payment not required for this story");
@@ -124,6 +138,7 @@ Deno.serve(async (req: Request) => {
         memorial_id,
         amount: serverAmount,
         currency: "KES",
+        payment_type: "story_posting",
         status: "pending",
         payment_reference: customReference,
       });

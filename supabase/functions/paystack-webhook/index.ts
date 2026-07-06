@@ -10,8 +10,8 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
-    if (!PAYSTACK_SECRET_KEY) throw new Error("PAYSTACK_SECRET_KEY not configured");
+    const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY") || Deno.env.get("SK_PAYSTACK");
+    if (!PAYSTACK_SECRET_KEY) throw new Error("Payment secret key is not configured");
 
     const body = await req.text();
     const signature = req.headers.get("x-paystack-signature") || "";
@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
     );
 
     if (metadata.type === "memorial") {
-      await supabase.from("payments").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
+      await supabase.from("payments").update({ status: "completed", payment_type: "memorial" }).eq("payment_reference", reference).eq("status", "pending");
       const expiry = new Date();
       expiry.setFullYear(expiry.getFullYear() + 1);
       await supabase.from("memorial_pages").update({
@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
       });
 
     } else if (metadata.type === "memorial_creation") {
-      await supabase.from("payments").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
+      await supabase.from("payments").update({ status: "completed", payment_type: "memorial_creation" }).eq("payment_reference", reference).eq("status", "pending");
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
         message: "Your memorial page creation payment was successful! You can now activate the page.",
@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
       });
 
     } else if (metadata.type === "story_posting") {
-      await supabase.from("payments").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
+      await supabase.from("payments").update({ status: "completed", payment_type: "story_posting" }).eq("payment_reference", reference).eq("status", "pending");
       await supabase.from("notifications").insert({
         user_id: metadata.user_id,
         message: "Your story posting payment was successful! You can now post your story.",
@@ -90,13 +90,16 @@ Deno.serve(async (req: Request) => {
       });
 
     } else if (metadata.type === "flower_tribute") {
-      await supabase.from("flower_tributes").update({
+      const { data: completedFlowers } = await supabase.from("flower_tributes").update({
         status: "completed",
         payment_reference: reference,
-      }).eq("memorial_id", metadata.memorial_id)
-        .eq("sender_user_id", metadata.user_id)
-        .eq("flower_type", metadata.flower_type)
-        .eq("status", "pending");
+      }).eq("payment_reference", reference)
+        .eq("status", "pending")
+        .select("id");
+
+      if (!completedFlowers?.length) {
+        return new Response("OK", { status: 200 });
+      }
 
       const { data: memorial } = await supabase.from("memorial_pages")
         .select("created_by, full_name").eq("id", metadata.memorial_id).single();
@@ -182,48 +185,62 @@ Deno.serve(async (req: Request) => {
         }
       }
     } else if (metadata.type === "legend_article") {
-      await supabase.from("legend_articles").update({
+      const { data: paidArticles } = await supabase.from("legend_articles").update({
         status: "paid",
         paid_at: new Date().toISOString(),
         payment_reference: reference,
-      }).eq("id", metadata.article_id);
+      }).eq("id", metadata.article_id)
+        .eq("status", "awaiting_payment")
+        .select("id, submitted_by");
+
+      if (paidArticles?.length) {
+        if (metadata.user_id) {
+          await supabase.from("notifications").insert({
+            user_id: metadata.user_id,
+            message: "Your article payment was successful. It will appear on the legend's page once an admin approves it.",
+            link: `/national-legends`,
+          });
+        }
+
+        const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
+        for (const admin of (admins || [])) {
+          await supabase.from("notifications").insert({
+            user_id: admin.user_id,
+            message: "A paid National Legend article is awaiting your final approval.",
+            link: `/admin`,
+          });
+        }
+      }
     } else if (metadata.type === "legend_tribute") {
-      await supabase.from("legend_contributions").update({ status: "completed" }).eq("payment_reference", reference).eq("status", "pending");
+      const { data: completedTributes } = await supabase.from("legend_contributions")
+        .update({ status: "completed" })
+        .eq("payment_reference", reference)
+        .eq("status", "pending")
+        .select("id, amount, contributor_name");
+
+      if (!completedTributes?.length) {
+        return new Response("OK", { status: 200 });
+      }
+
+      const completedTribute = completedTributes[0];
       const { data: legend } = await supabase.from("national_legends").select("current_tribute_amount, full_name").eq("id", metadata.legend_id).single();
       if (legend) {
-        const newTotal = (legend.current_tribute_amount || 0) + Number(metadata.amount || 0);
+        const newTotal = (legend.current_tribute_amount || 0) + Number(completedTribute.amount || 0);
         await supabase.from("national_legends").update({ current_tribute_amount: newTotal }).eq("id", metadata.legend_id);
         const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
         for (const admin of (admins || [])) {
           await supabase.from("notifications").insert({
             user_id: admin.user_id,
-            message: `New tribute for ${legend.full_name}: KES ${Number(metadata.amount).toLocaleString()} from ${metadata.contributor_name || "Anonymous"}.`,
+            message: `New tribute for ${legend.full_name}: KES ${Number(completedTribute.amount).toLocaleString()} from ${completedTribute.contributor_name || "Anonymous"}.`,
             link: `/national-legends`,
           });
         }
-      }
-
-      if (metadata.user_id) {
-        await supabase.from("notifications").insert({
-          user_id: metadata.user_id,
-          message: "Your article payment was successful. It will appear on the legend's page once an admin approves it.",
-          link: `/national-legends`,
-        });
-      }
-
-      const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
-      for (const admin of (admins || [])) {
-        await supabase.from("notifications").insert({
-          user_id: admin.user_id,
-          message: "A paid National Legend article is awaiting your final approval.",
-          link: `/admin`,
-        });
       }
     }
 
     return new Response("OK", { status: 200 });
   } catch (error) {
     console.error("Webhook error:", error);
-    return new Response("Error", { status: 500 });
+    return new Response("Error", { status: 500, headers: corsHeaders });
   }
 });

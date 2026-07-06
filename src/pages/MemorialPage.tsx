@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2, Shield, Save } from "lucide-react";
+import { Heart, BookOpen, Users, PenLine, Mail, Lightbulb, MessageCircle, Edit, Flag, CreditCard, Lock, Flower2, Shield, Save, Trash2 } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 import FlowerTributeDialog from "@/components/memorial/FlowerTributeDialog";
 import JourneyTimeline from "@/components/memorial/JourneyTimeline";
@@ -53,6 +53,11 @@ const MemorialPage = () => {
   const [activating, setActivating] = useState(false);
   const [showFlowerDialog, setShowFlowerDialog] = useState(false);
   const [storyPaymentInfo, setStoryPaymentInfo] = useState<{ required: boolean; amount: number; freeRemaining: number } | null>(null);
+  const [storyComments, setStoryComments] = useState<Record<string, any[]>>({});
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [commentEditText, setCommentEditText] = useState("");
   const [editingMemorial, setEditingMemorial] = useState(false);
   const [memorialEditForm, setMemorialEditForm] = useState({
     full_name: "", personality_summary: "", common_phrase: "", life_lesson: "",
@@ -61,6 +66,19 @@ const MemorialPage = () => {
 
   const isActive = memorial?.status === 'active';
   const isOwner = user?.id === memorial?.created_by;
+
+  const hasStoryPostingCredit = async () => {
+    if (!user || !id) return false;
+    const db = supabase as any;
+    const { data } = await db.from("payments").select("id")
+      .eq("user_id", user.id)
+      .eq("memorial_id", id)
+      .eq("payment_type", "story_posting")
+      .eq("status", "completed")
+      .is("consumed_at", null)
+      .maybeSingle();
+    return !!data;
+  };
 
   // Poll for status update after returning from payment
   useEffect(() => {
@@ -130,6 +148,10 @@ const MemorialPage = () => {
       setStoryPaymentInfo({ required: false, amount: 0, freeRemaining: 999 });
       return;
     }
+    if (await hasStoryPostingCredit()) {
+      setStoryPaymentInfo({ required: false, amount: 0, freeRemaining: 1 });
+      return;
+    }
     const { count } = await supabase.from("stories").select("id", { count: "exact", head: true })
       .eq("author_id", user.id).eq("memorial_id", id);
     const storyCount = count || 0;
@@ -171,6 +193,20 @@ const MemorialPage = () => {
         grouped[r.story_id].push(r);
       });
       setReactions(grouped);
+      const db = supabase as any;
+      const { data: comments } = await db.from("story_comments")
+        .select("*, profiles:author_id(display_name, username)")
+        .in("story_id", storyIds)
+        .order("created_at", { ascending: true });
+      const groupedComments: Record<string, any[]> = {};
+      (comments || []).forEach((comment: any) => {
+        if (!groupedComments[comment.story_id]) groupedComments[comment.story_id] = [];
+        groupedComments[comment.story_id].push(comment);
+      });
+      setStoryComments(groupedComments);
+    } else {
+      setReactions({});
+      setStoryComments({});
     }
 
     if (user) {
@@ -206,6 +242,10 @@ const MemorialPage = () => {
       const groupNumber = Math.floor(storyCount / 3);
 
       if (positionInGroup === 2) {
+        if (await hasStoryPostingCredit()) {
+          setShowStoryForm(!showStoryForm);
+          return;
+        }
         const amount = 250 + (groupNumber * 250);
         try {
           const { data, error } = await supabase.functions.invoke("initialize-payment", {
@@ -231,7 +271,8 @@ const MemorialPage = () => {
     if (!isActive && !isAdmin) { toast({ title: "This memorial page must be activated before posting stories", variant: "destructive" }); return; }
     if (!storyForm.title || !storyForm.content) { toast({ title: "Title and content required", variant: "destructive" }); return; }
 
-    if (storyPaymentInfo?.required && !isAdmin) {
+    const paidCreditAvailable = !isAdmin && await hasStoryPostingCredit();
+    if (storyPaymentInfo?.required && !isAdmin && !paidCreditAvailable) {
       toast({ title: "Payment required", description: `You need to pay KES ${storyPaymentInfo.amount} to post this story.`, variant: "destructive" });
       return;
     }
@@ -248,6 +289,18 @@ const MemorialPage = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
+      if (paidCreditAvailable) {
+        const db = supabase as any;
+        const { data: credit } = await db.from("payments").select("id")
+          .eq("user_id", user.id)
+          .eq("memorial_id", id)
+          .eq("payment_type", "story_posting")
+          .eq("status", "completed")
+          .is("consumed_at", null)
+          .limit(1)
+          .maybeSingle();
+        if (credit) await db.from("payments").update({ consumed_at: new Date().toISOString() }).eq("id", credit.id);
+      }
       toast({ title: "Story shared!" });
       supabase.functions.invoke("ai-tracking", {
         body: { action: "extract_keywords", data: { memorial_id: id, text: `${storyForm.title} ${storyForm.content}` } },
@@ -280,6 +333,93 @@ const MemorialPage = () => {
       setEditingStory(null);
       loadAll();
     }
+  };
+
+  const deleteStory = async (storyId: string) => {
+    if (!confirm("Delete this story permanently?")) return;
+    const { error } = await supabase.from("stories").delete().eq("id", storyId);
+    if (error) {
+      toast({ title: "Could not delete story", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Story deleted" });
+    loadAll();
+  };
+
+  const submitComment = async (storyId: string, parentCommentId: string | null = null) => {
+    if (!user) { toast({ title: "Please sign in", variant: "destructive" }); return; }
+    const draftKey = parentCommentId || storyId;
+    const text = (commentDrafts[draftKey] || "").trim();
+    if (text.length < 2) { toast({ title: "Please write a comment", variant: "destructive" }); return; }
+    const db = supabase as any;
+    const { error } = await db.from("story_comments").insert({
+      story_id: storyId,
+      author_id: user.id,
+      comment: text,
+      parent_comment_id: parentCommentId,
+    });
+    if (error) { toast({ title: "Could not post comment", description: error.message, variant: "destructive" }); return; }
+    setCommentDrafts(prev => ({ ...prev, [draftKey]: "" }));
+    setReplyTo(null);
+    loadAll();
+  };
+
+  const startEditComment = (comment: any) => {
+    setEditingComment(comment.id);
+    setCommentEditText(comment.comment);
+  };
+
+  const submitEditComment = async (commentId: string) => {
+    const text = commentEditText.trim();
+    if (text.length < 2) return;
+    const db = supabase as any;
+    const { error } = await db.from("story_comments").update({ comment: text }).eq("id", commentId);
+    if (error) { toast({ title: "Could not update comment", description: error.message, variant: "destructive" }); return; }
+    setEditingComment(null);
+    setCommentEditText("");
+    loadAll();
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!confirm("Delete this comment?")) return;
+    const { error } = await supabase.from("story_comments").delete().eq("id", commentId);
+    if (error) { toast({ title: "Could not delete comment", description: error.message, variant: "destructive" }); return; }
+    loadAll();
+  };
+
+  const renderStoryComment = (storyId: string, comment: any, replies: any[]) => {
+    const canManageComment = user?.id === comment.author_id || isAdmin;
+    return (
+      <div key={comment.id} className="bg-background border border-border rounded-lg p-3 space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-body font-semibold text-foreground">{comment.profiles?.display_name || comment.profiles?.username || "Anonymous"}</p>
+            {editingComment === comment.id ? (
+              <div className="space-y-2 mt-2">
+                <Textarea value={commentEditText} onChange={e => setCommentEditText(e.target.value)} className="min-h-[70px]" />
+                <div className="flex gap-2 justify-end"><Button size="sm" variant="outline" onClick={() => setEditingComment(null)}>Cancel</Button><Button size="sm" variant="hero" onClick={() => submitEditComment(comment.id)}>Save</Button></div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground font-body whitespace-pre-line">{comment.comment}</p>
+            )}
+          </div>
+          {canManageComment && editingComment !== comment.id && (
+            <div className="flex gap-2 shrink-0">
+              {user?.id === comment.author_id && <button onClick={() => startEditComment(comment)} className="text-xs text-muted-foreground hover:text-primary">Edit</button>}
+              <button onClick={() => deleteComment(comment.id)} className="text-xs text-muted-foreground hover:text-destructive">Delete</button>
+            </div>
+          )}
+        </div>
+        {user && <button onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)} className="text-xs text-primary font-body">Reply</button>}
+        {replyTo === comment.id && (
+          <div className="space-y-2 pl-4 border-l border-border">
+            <Textarea placeholder="Write a reply…" value={commentDrafts[comment.id] || ""} onChange={e => setCommentDrafts(prev => ({ ...prev, [comment.id]: e.target.value }))} className="min-h-[70px]" />
+            <div className="flex justify-end"><Button size="sm" variant="outline" onClick={() => submitComment(storyId, comment.id)}>Reply</Button></div>
+          </div>
+        )}
+        {replies.length > 0 && <div className="pl-4 border-l border-border space-y-2">{replies.map(reply => renderStoryComment(storyId, reply, []))}</div>}
+      </div>
+    );
   };
 
   const toggleReaction = async (storyId: string, reactionType: string) => {
@@ -668,6 +808,9 @@ const MemorialPage = () => {
                 const storyReactions = reactions[story.id] || [];
                 const isEditingThis = editingStory === story.id;
                 const canEdit = user?.id === story.author_id && (story.edit_count || 0) < 2;
+                const canDelete = user?.id === story.author_id || isAdmin;
+                const comments = storyComments[story.id] || [];
+                const topLevelComments = comments.filter((comment) => !comment.parent_comment_id);
 
                 return (
                   <motion.div
@@ -686,6 +829,11 @@ const MemorialPage = () => {
                         {canEdit && !isEditingThis && (
                           <button onClick={() => startEdit(story)} className="text-xs text-muted-foreground hover:text-primary font-body flex items-center gap-1">
                             <Edit className="w-3 h-3" /> Edit ({2 - (story.edit_count || 0)} left)
+                          </button>
+                        )}
+                        {canDelete && !isEditingThis && (
+                          <button onClick={() => deleteStory(story.id)} className="text-xs text-muted-foreground hover:text-destructive font-body flex items-center gap-1">
+                            <Trash2 className="w-3 h-3" /> Delete
                           </button>
                         )}
                         {user && user.id !== story.author_id && (
@@ -738,6 +886,31 @@ const MemorialPage = () => {
                               </button>
                             );
                           })}
+                        </div>
+                        <div className="mt-5 border-t border-border pt-4 space-y-3">
+                          <div className="flex items-center gap-2 text-sm font-body font-medium text-foreground">
+                            <MessageCircle className="w-4 h-4 text-primary" /> Comments
+                          </div>
+                          {user ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                placeholder="Write a comment…"
+                                value={commentDrafts[story.id] || ""}
+                                onChange={e => setCommentDrafts(prev => ({ ...prev, [story.id]: e.target.value }))}
+                                className="min-h-[80px]"
+                              />
+                              <div className="flex justify-end">
+                                <Button size="sm" variant="outline" onClick={() => submitComment(story.id)}>Comment</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground font-body">Sign in to comment or reply.</p>
+                          )}
+                          {topLevelComments.map((comment) => renderStoryComment(
+                            story.id,
+                            comment,
+                            comments.filter((reply) => reply.parent_comment_id === comment.id)
+                          ))}
                         </div>
                       </>
                     )}
