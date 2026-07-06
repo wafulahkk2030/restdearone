@@ -808,6 +808,9 @@ const MemorialPage = () => {
                 const storyReactions = reactions[story.id] || [];
                 const isEditingThis = editingStory === story.id;
                 const canEdit = user?.id === story.author_id && (story.edit_count || 0) < 2;
+                const canDelete = user?.id === story.author_id || isAdmin;
+                const comments = storyComments[story.id] || [];
+                const topLevelComments = comments.filter((comment) => !comment.parent_comment_id);
 
                 return (
                   <motion.div
@@ -826,6 +829,11 @@ const MemorialPage = () => {
                         {canEdit && !isEditingThis && (
                           <button onClick={() => startEdit(story)} className="text-xs text-muted-foreground hover:text-primary font-body flex items-center gap-1">
                             <Edit className="w-3 h-3" /> Edit ({2 - (story.edit_count || 0)} left)
+                          </button>
+                        )}
+                        {canDelete && !isEditingThis && (
+                          <button onClick={() => deleteStory(story.id)} className="text-xs text-muted-foreground hover:text-destructive font-body flex items-center gap-1">
+                            <Trash2 className="w-3 h-3" /> Delete
                           </button>
                         )}
                         {user && user.id !== story.author_id && (
@@ -878,6 +886,31 @@ const MemorialPage = () => {
                               </button>
                             );
                           })}
+                        </div>
+                        <div className="mt-5 border-t border-border pt-4 space-y-3">
+                          <div className="flex items-center gap-2 text-sm font-body font-medium text-foreground">
+                            <MessageCircle className="w-4 h-4 text-primary" /> Comments
+                          </div>
+                          {user ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                placeholder="Write a comment…"
+                                value={commentDrafts[story.id] || ""}
+                                onChange={e => setCommentDrafts(prev => ({ ...prev, [story.id]: e.target.value }))}
+                                className="min-h-[80px]"
+                              />
+                              <div className="flex justify-end">
+                                <Button size="sm" variant="outline" onClick={() => submitComment(story.id)}>Comment</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground font-body">Sign in to comment or reply.</p>
+                          )}
+                          {topLevelComments.map((comment) => renderStoryComment(
+                            story.id,
+                            comment,
+                            comments.filter((reply) => reply.parent_comment_id === comment.id)
+                          ))}
                         </div>
                       </>
                     )}
