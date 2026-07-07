@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar, MessageCircle, ExternalLink, Send, FileText, CreditCard } from "lucide-react";
+import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar, MessageCircle, ExternalLink, Send, FileText, CreditCard, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,8 @@ const NationalLegendDetail = () => {
   const [artForm, setArtForm] = useState({ author_name: "", author_email: "", title: "", body: "", image_url: "", source_url: "" });
   const [submittingArticle, setSubmittingArticle] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
+  const [visibleComments, setVisibleComments] = useState(8);
 
   useEffect(() => {
     (async () => {
@@ -293,21 +295,45 @@ const NationalLegendDetail = () => {
                 <p className="text-sm text-muted-foreground font-body italic">No articles yet — be the first to share one.</p>
               )}
               <div className="space-y-5">
-                {articles.map((a) => (
-                  <article key={a.id} className="bg-card border border-border rounded-2xl overflow-hidden">
-                    {a.image_url && <img src={a.image_url} alt={a.title} className="w-full max-h-72 object-cover" loading="lazy" />}
-                    <div className="p-5">
-                      <h3 className="font-display text-xl font-bold text-foreground">{a.title}</h3>
-                      <p className="text-xs text-muted-foreground font-body mt-1">By {a.author_name} · {new Date(a.created_at).toLocaleDateString()}</p>
-                      <p className="text-sm text-foreground/90 font-body mt-3 whitespace-pre-line leading-relaxed">{a.body}</p>
-                      {a.source_url && (
-                        <a href={a.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary mt-3 underline font-body">
-                          Source <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </div>
-                  </article>
-                ))}
+                {articles.map((a) => {
+                  const isOpen = expandedArticle === a.id;
+                  const preview = a.body?.length > 280 ? a.body.slice(0, 280).trimEnd() + "…" : a.body;
+                  return (
+                    <article key={a.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+                      {a.image_url && <img src={a.image_url} alt={a.title} className="w-full max-h-80 object-cover" loading="lazy" />}
+                      <div className="p-6 md:p-8">
+                        <h3 className="font-display text-2xl md:text-3xl font-bold text-foreground leading-snug">{a.title}</h3>
+                        <p className="text-xs text-muted-foreground font-body mt-2">By {a.author_name} · {new Date(a.created_at).toLocaleDateString()}</p>
+                        <p className="text-base text-foreground/90 font-body mt-4 whitespace-pre-line leading-[1.8]">
+                          {isOpen ? a.body : preview}
+                        </p>
+                        {a.source_url && isOpen && (
+                          <a href={a.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary mt-4 underline font-body">
+                            Source <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                        <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-border">
+                          {a.body?.length > 280 && (
+                            <button
+                              onClick={() => setExpandedArticle(isOpen ? null : a.id)}
+                              className="inline-flex items-center gap-1 text-sm text-primary font-body hover:underline"
+                            >
+                              {isOpen ? <>Fold <ChevronUp className="w-4 h-4" /></> : <>Read more <ChevronDown className="w-4 h-4" /></>}
+                            </button>
+                          )}
+                          <Link
+                            to={`/national-legends/article/${a.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-foreground/70 hover:text-primary font-body ml-auto"
+                          >
+                            <BookOpen className="w-4 h-4" /> Open in new tab <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
 
               {/* My submissions (signed-in author) */}
@@ -399,7 +425,7 @@ const NationalLegendDetail = () => {
                 {comments.length === 0 && (
                   <p className="text-sm text-muted-foreground font-body italic">Be the first to leave a tribute.</p>
                 )}
-                {comments.map((c) => (
+                {comments.slice(0, visibleComments).map((c) => (
                   <div key={c.id} className="bg-card/60 border border-border rounded-xl p-4">
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-body font-semibold text-sm text-foreground">{c.contributor_name}</span>
@@ -410,6 +436,16 @@ const NationalLegendDetail = () => {
                     <p className="text-sm text-muted-foreground font-body mt-1 whitespace-pre-line leading-relaxed">{c.message}</p>
                   </div>
                 ))}
+                {comments.length > visibleComments && (
+                  <div className="text-center">
+                    <button
+                      onClick={() => setVisibleComments((n) => n + 12)}
+                      className="text-sm text-primary font-body hover:underline"
+                    >
+                      Show more messages ({comments.length - visibleComments} remaining)
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
