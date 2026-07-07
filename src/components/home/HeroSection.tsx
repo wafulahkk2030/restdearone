@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
+import rdoFamily from "@/assets/rdo-family.png.asset.json";
 
 const HeroSection = () => {
   const ref = useRef(null);
@@ -112,6 +113,23 @@ const HeroSection = () => {
         >
           "Facebook deactivates, we reactivate."
         </motion.p>
+
+        <motion.div
+          className="mt-12 mx-auto max-w-4xl"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1.3 }}
+        >
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-border/50">
+            <img
+              src={rdoFamily.url}
+              alt="A family gathered together at sunset, holding onto shared memories"
+              className="w-full h-auto object-cover"
+              loading="eager"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent pointer-events-none" />
+          </div>
+        </motion.div>
 
         {/* Scroll indicator */}
         <motion.div
