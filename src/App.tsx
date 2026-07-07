@@ -32,6 +32,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import NationalLegends from "./pages/NationalLegends";
 import NationalLegendDetail from "./pages/NationalLegendDetail";
 import SubmitNationalLegend from "./pages/SubmitNationalLegend";
+import LegendArticlePage from "./pages/LegendArticlePage";
 import NewsletterPopup from "./components/NewsletterPopup";
 import InstallAppPrompt from "./components/InstallAppPrompt";
 import AppSplash from "./components/AppSplash";
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/national-legends" element={<NationalLegends />} />
             <Route path="/national-legends/submit" element={<SubmitNationalLegend />} />
+            <Route path="/national-legends/article/:articleId" element={<LegendArticlePage />} />
             <Route path="/national-legends/:id" element={<NationalLegendDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
