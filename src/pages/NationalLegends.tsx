@@ -22,7 +22,24 @@ const NationalLegends = () => {
         .eq("status", "approved")
         .eq("visibility", "public")
         .order("death_year", { ascending: false });
-      setLegends(data || []);
+      const legendsData = data || [];
+      // Rank by total paid tribute contributions (more honoured = more visible).
+      // Amounts are only shown to admin; the ranking itself is public.
+      if (legendsData.length > 0) {
+        const ids = legendsData.map((l: any) => l.id);
+        const { data: contribs } = await supabase
+          .from("legend_contributions")
+          .select("legend_id, amount")
+          .in("legend_id", ids)
+          .eq("status", "completed")
+          .eq("contribution_type", "tribute");
+        const totals = new Map<string, number>();
+        (contribs || []).forEach((c: any) => {
+          totals.set(c.legend_id, (totals.get(c.legend_id) || 0) + (c.amount || 0));
+        });
+        legendsData.sort((a: any, b: any) => (totals.get(b.id) || 0) - (totals.get(a.id) || 0));
+      }
+      setLegends(legendsData);
       setLoading(false);
     })();
   }, []);
