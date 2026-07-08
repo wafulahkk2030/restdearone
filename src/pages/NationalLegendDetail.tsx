@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar, MessageCircle, ExternalLink, Send, FileText, CreditCard, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
+import { Flag, ShieldCheck, Heart, Users, MapPin, Calendar, MessageCircle, ExternalLink, Send, FileText, CreditCard, ChevronDown, ChevronUp, BookOpen, Trash2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,15 @@ const NationalLegendDetail = () => {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
   const [visibleComments, setVisibleComments] = useState(8);
+  const [accountAgeDays, setAccountAgeDays] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) { setAccountAgeDays(null); return; }
+    const created = (user as any).created_at ? new Date((user as any).created_at) : null;
+    if (!created) { setAccountAgeDays(0); return; }
+    const days = Math.floor((Date.now() - created.getTime()) / 86400000);
+    setAccountAgeDays(days);
+  }, [user]);
 
   useEffect(() => {
     (async () => {
@@ -139,6 +148,11 @@ const NationalLegendDetail = () => {
 
   const submitArticle = async () => {
     if (!legend) return;
+    if (!user) { toast({ title: "Please sign in first", variant: "destructive" }); return; }
+    if (accountAgeDays !== null && accountAgeDays < 3) {
+      toast({ title: "Account too new", description: `Legend articles can be submitted after 3 days. Your account is ${accountAgeDays} day${accountAgeDays === 1 ? "" : "s"} old.`, variant: "destructive" });
+      return;
+    }
     const { author_name, author_email, title, body } = artForm;
     if (!author_name.trim() || !author_email.includes("@") || title.trim().length < 4 || body.trim().length < 30) {
       toast({ title: "Please fill name, email, title and a longer article body (30+ chars).", variant: "destructive" });
@@ -161,6 +175,15 @@ const NationalLegendDetail = () => {
     toast({ title: "Submitted for review", description: "An admin will review and set the publishing fee. You'll be notified." });
     setArtForm({ author_name: "", author_email: "", title: "", body: "", image_url: "", source_url: "" });
     if (data && user) setMyArticles((p) => [data, ...p]);
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!isAdmin) return;
+    if (!window.confirm("Delete this comment permanently?")) return;
+    const { error } = await supabase.from("legend_contributions").delete().eq("id", commentId);
+    if (error) { toast({ title: "Delete failed", description: error.message, variant: "destructive" }); return; }
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    toast({ title: "Comment removed" });
   };
 
   const payForArticle = async (article_id: string) => {
