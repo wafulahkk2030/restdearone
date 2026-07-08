@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { User, MapPin, Edit, Save, BookOpen, Users, Heart } from "lucide-react";
+import { User, MapPin, Edit, Save, BookOpen, Users, Heart, Mail } from "lucide-react";
 import { getFlag } from "@/lib/countries";
 
 const Profile = () => {
@@ -115,6 +115,12 @@ const Profile = () => {
                     {profile?.display_name || profile?.username}
                   </h1>
                   <p className="text-sm text-muted-foreground font-body">@{profile?.username}</p>
+                  {(profile?.email || user?.email) && (
+                    <p className="text-sm text-muted-foreground font-body flex items-center justify-center gap-1 mt-1">
+                      <Mail className="w-3 h-3" /> {profile?.email || user?.email}
+                      <span className="text-[10px] text-muted-foreground/70 ml-1">(only you can see this)</span>
+                    </p>
+                  )}
                   {profile?.city && (
                     <p className="text-sm text-muted-foreground font-body flex items-center justify-center gap-1 mt-1">
                       <MapPin className="w-3 h-3" /> {profile.city}
