@@ -303,6 +303,75 @@ const NationalLegendDetail = () => {
               </a>
             )}
 
+            {/* Public comment / tribute wall — appears BEFORE articles so it stays lively */}
+            <div id="comments" className="pt-6 border-t border-border">
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-primary" /> A Nation Remembers
+              </h2>
+              <p className="text-sm text-muted-foreground font-body mb-5">
+                Leave a message in honour of {legend.full_name}. Open to everyone — no sign-in needed.
+              </p>
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+                <Input
+                  placeholder="Your name (optional)"
+                  value={commentName}
+                  onChange={(e) => setCommentName(e.target.value)}
+                  maxLength={80}
+                />
+                <Textarea
+                  placeholder="Share a memory, condolence, or tribute…"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  rows={4}
+                  maxLength={1000}
+                />
+                <div className="flex justify-end">
+                  <Button variant="hero" onClick={postComment} disabled={postingComment} className="gap-2">
+                    <Send className="w-4 h-4" />
+                    {postingComment ? "Posting…" : "Post message"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {comments.length === 0 && (
+                  <p className="text-sm text-muted-foreground font-body italic">Be the first to leave a tribute.</p>
+                )}
+                {comments.slice(0, visibleComments).map((c) => (
+                  <div key={c.id} className="bg-card/60 border border-border rounded-xl p-4">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-body font-semibold text-sm text-foreground">{c.contributor_name}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground font-body">
+                          {new Date(c.created_at).toLocaleDateString()}
+                        </span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => deleteComment(c.id)}
+                            className="text-destructive/70 hover:text-destructive transition-colors"
+                            title="Admin: delete comment"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-body mt-1 whitespace-pre-line leading-relaxed">{c.message}</p>
+                  </div>
+                ))}
+                {comments.length > visibleComments && (
+                  <div className="text-center">
+                    <button
+                      onClick={() => setVisibleComments((n) => n + 12)}
+                      className="text-sm text-primary font-body hover:underline"
+                    >
+                      Show more messages ({comments.length - visibleComments} remaining)
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Articles & Tributes (community-submitted, admin-approved) */}
             <div id="articles" className="pt-6 border-t border-border space-y-6">
               <div>
@@ -402,73 +471,23 @@ const NationalLegendDetail = () => {
                 <Input placeholder="Article title" value={artForm.title} onChange={(e) => setArtForm({ ...artForm, title: e.target.value })} maxLength={140} />
                 <Textarea placeholder="Write your article…" rows={6} value={artForm.body} onChange={(e) => setArtForm({ ...artForm, body: e.target.value })} maxLength={8000} />
                 <div className="grid sm:grid-cols-2 gap-3">
-                  <Input placeholder="Image URL (optional)" value={artForm.image_url} onChange={(e) => setArtForm({ ...artForm, image_url: e.target.value })} />
+                  <Input placeholder="Image URL (optional — no copyrighted images)" value={artForm.image_url} onChange={(e) => setArtForm({ ...artForm, image_url: e.target.value })} />
                   <Input placeholder="Source link (optional)" value={artForm.source_url} onChange={(e) => setArtForm({ ...artForm, source_url: e.target.value })} />
                 </div>
+                <p className="text-[11px] text-muted-foreground font-body italic">
+                  Please only submit images you own or that are free of copyright. Do not upload copyrighted photos — your submission may be rejected.
+                  {user && accountAgeDays !== null && accountAgeDays < 3 && (
+                    <span className="block text-destructive not-italic mt-1">
+                      Your account is {accountAgeDays} day{accountAgeDays === 1 ? "" : "s"} old — legend articles can only be submitted after 3 days.
+                    </span>
+                  )}
+                </p>
                 <div className="flex justify-end">
-                  <Button variant="hero" onClick={submitArticle} disabled={submittingArticle} className="gap-2">
+                  <Button variant="hero" onClick={submitArticle} disabled={submittingArticle || !user || (accountAgeDays !== null && accountAgeDays < 3)} className="gap-2">
                     <Send className="w-4 h-4" />
                     {submittingArticle ? "Submitting…" : "Submit for review"}
                   </Button>
                 </div>
-              </div>
-            </div>
-
-            {/* Public comment / tribute wall — open to everyone */}
-            <div id="comments" className="pt-6 border-t border-border">
-              <h2 className="font-display text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-primary" /> A Nation Remembers
-              </h2>
-              <p className="text-sm text-muted-foreground font-body mb-5">
-                Leave a message in honour of {legend.full_name}. Open to everyone — no sign-in needed.
-              </p>
-              <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-                <Input
-                  placeholder="Your name (optional)"
-                  value={commentName}
-                  onChange={(e) => setCommentName(e.target.value)}
-                  maxLength={80}
-                />
-                <Textarea
-                  placeholder="Share a memory, condolence, or tribute…"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  rows={4}
-                  maxLength={1000}
-                />
-                <div className="flex justify-end">
-                  <Button variant="hero" onClick={postComment} disabled={postingComment} className="gap-2">
-                    <Send className="w-4 h-4" />
-                    {postingComment ? "Posting…" : "Post message"}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-4">
-                {comments.length === 0 && (
-                  <p className="text-sm text-muted-foreground font-body italic">Be the first to leave a tribute.</p>
-                )}
-                {comments.slice(0, visibleComments).map((c) => (
-                  <div key={c.id} className="bg-card/60 border border-border rounded-xl p-4">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="font-body font-semibold text-sm text-foreground">{c.contributor_name}</span>
-                      <span className="text-xs text-muted-foreground font-body">
-                        {new Date(c.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-body mt-1 whitespace-pre-line leading-relaxed">{c.message}</p>
-                  </div>
-                ))}
-                {comments.length > visibleComments && (
-                  <div className="text-center">
-                    <button
-                      onClick={() => setVisibleComments((n) => n + 12)}
-                      className="text-sm text-primary font-body hover:underline"
-                    >
-                      Show more messages ({comments.length - visibleComments} remaining)
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
