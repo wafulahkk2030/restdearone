@@ -1674,6 +1674,63 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          banner_active: boolean
+          banner_message: string | null
+          chat_enabled: boolean
+          comments_enabled: boolean
+          community_creation_enabled: boolean
+          created_at: string
+          fundraiser_creation_enabled: boolean
+          id: boolean
+          maintenance_message: string | null
+          maintenance_mode: boolean
+          memorial_creation_enabled: boolean
+          payments_enabled: boolean
+          signups_enabled: boolean
+          story_creation_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          banner_active?: boolean
+          banner_message?: string | null
+          chat_enabled?: boolean
+          comments_enabled?: boolean
+          community_creation_enabled?: boolean
+          created_at?: string
+          fundraiser_creation_enabled?: boolean
+          id?: boolean
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          memorial_creation_enabled?: boolean
+          payments_enabled?: boolean
+          signups_enabled?: boolean
+          story_creation_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          banner_active?: boolean
+          banner_message?: string | null
+          chat_enabled?: boolean
+          comments_enabled?: boolean
+          community_creation_enabled?: boolean
+          created_at?: string
+          fundraiser_creation_enabled?: boolean
+          id?: boolean
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          memorial_creation_enabled?: boolean
+          payments_enabled?: boolean
+          signups_enabled?: boolean
+          story_creation_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           author_id: string
