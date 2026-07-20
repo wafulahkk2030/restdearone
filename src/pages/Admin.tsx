@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare, Bell, Send, Mail, Heart } from "lucide-react";
+import { Shield, Users, BookOpen, Flag, Activity, CreditCard, Settings, MessageSquare, Bell, Send, Mail, Heart, Power, BarChart3, FileText, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,8 +20,12 @@ import AdminFundraisers from "@/components/admin/AdminFundraisers";
 import AdminNationalLegends from "@/components/admin/AdminNationalLegends";
 import AdminLegendArticles from "@/components/admin/AdminLegendArticles";
 import AdminNewsletter from "@/components/admin/AdminNewsletter";
+import AdminKillSwitches from "@/components/admin/AdminKillSwitches";
+import AdminUserDetails from "@/components/admin/AdminUserDetails";
+import AdminStoriesMod from "@/components/admin/AdminStoriesMod";
+import AdminAnalytics from "@/components/admin/AdminAnalytics";
 
-type Tab = "overview" | "reports" | "memorials" | "communities" | "users" | "payments" | "fundraisers" | "legends" | "legend_articles" | "newsletter" | "logs" | "notifications" | "contacted";
+type Tab = "overview" | "analytics" | "kill_switches" | "reports" | "memorials" | "stories" | "communities" | "users" | "user_details" | "payments" | "fundraisers" | "legends" | "legend_articles" | "newsletter" | "logs" | "notifications" | "contacted";
 
 const Admin = () => {
   const { user, isAdmin, adminRole, loading: authLoading } = useAuth();
@@ -177,10 +181,14 @@ const Admin = () => {
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: "overview", label: "Overview", icon: Activity },
+    { key: "analytics", label: "Analytics", icon: BarChart3 },
+    { key: "kill_switches", label: "Kill Switches", icon: Power },
     { key: "reports", label: "Reports", icon: Flag },
     { key: "memorials", label: "Memorials", icon: BookOpen },
+    { key: "stories", label: "Stories", icon: FileText },
     { key: "communities", label: "Communities", icon: MessageSquare },
     { key: "users", label: "Users", icon: Users },
+    { key: "user_details", label: "Auth Users", icon: UserCog },
     { key: "payments", label: "Payments", icon: CreditCard },
     { key: "fundraisers", label: "Fundraisers", icon: Heart },
     { key: "legends", label: "National Legends", icon: Flag },
@@ -236,6 +244,10 @@ const Admin = () => {
           </div>
 
           {tab === "overview" && <AdminOverview stats={stats} />}
+          {tab === "analytics" && <AdminAnalytics />}
+          {tab === "kill_switches" && <AdminKillSwitches />}
+          {tab === "stories" && <AdminStoriesMod />}
+          {tab === "user_details" && <AdminUserDetails />}
           {tab === "communities" && (
             <div className="space-y-6">
               <AdminCommunities userId={user!.id} adminRole={adminRole} />
