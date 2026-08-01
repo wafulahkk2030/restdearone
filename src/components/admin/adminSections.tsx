@@ -1,9 +1,9 @@
 import { ReactNode } from "react";
 import {
-  BarChart3, Users, ShieldCheck, Flag, MessageSquare, Briefcase, Lock,
-  CreditCard, FileText, Megaphone, BadgeCheck, LifeBuoy, Sparkles, Settings, ScrollText,
+  BarChart3, Users, Flag, HeartHandshake, MessageSquare, HandCoins,
+  CreditCard, FileText, Megaphone, LifeBuoy, Settings,
 } from "lucide-react";
-import AdminOverview from "./AdminOverview";
+import AdminOverviewLive from "./AdminOverviewLive";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminKillSwitches from "./AdminKillSwitches";
 import AdminUsers from "./AdminUsers";
@@ -16,7 +16,9 @@ import AdminLegendArticles from "./AdminLegendArticles";
 import AdminNewsletter from "./AdminNewsletter";
 import AdminContacted from "./AdminContacted";
 import AdminCommunities from "./AdminCommunities";
-import PlaceholderPanel from "./PlaceholderPanel";
+import AdminRoles from "./AdminRoles";
+import AdminBroadcast from "./AdminBroadcast";
+import AdminTablePanel, { AdminTablePanelProps } from "./AdminTablePanel";
 
 export interface SubTab {
   key: string;

@@ -14,7 +14,7 @@ export interface ColumnDef {
 
 export interface StatusAction {
   column: string;
-  options: { value: string; label: string; variant?: "default" | "destructive" }[];
+  options: { value: any; label: string; variant?: "default" | "destructive" }[];
 }
 
 export interface CreateField {
@@ -109,7 +109,7 @@ const AdminTablePanel = ({
     load();
   }, [load]);
 
-  const setStatus = async (id: string, value: string) => {
+  const setStatus = async (id: string, value: any) => {
     if (!statusAction) return;
     setBusyId(id);
     const { error } = await (supabase.from(table as any) as any)
