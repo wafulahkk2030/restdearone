@@ -1472,6 +1472,63 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          browser: string | null
+          created_at: string
+          device_type: string | null
+          id: string
+          language: string | null
+          page_title: string | null
+          path: string
+          referrer: string | null
+          referrer_source: string | null
+          screen_width: number | null
+          session_id: string | null
+          timezone: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          language?: string | null
+          page_title?: string | null
+          path: string
+          referrer?: string | null
+          referrer_source?: string | null
+          screen_width?: number | null
+          session_id?: string | null
+          timezone?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          language?: string | null
+          page_title?: string | null
+          path?: string
+          referrer?: string | null
+          referrer_source?: string | null
+          screen_width?: number | null
+          session_id?: string | null
+          timezone?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
