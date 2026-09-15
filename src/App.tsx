@@ -36,6 +36,7 @@ import LegendArticlePage from "./pages/LegendArticlePage";
 import NewsletterPopup from "./components/NewsletterPopup";
 import InstallAppPrompt from "./components/InstallAppPrompt";
 import AppSplash from "./components/AppSplash";
+import PageTracker from "./components/PageTracker";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
+        <PageTracker />
         <AppSplash />
         <TranslationProvider>
         <AuthProvider>
