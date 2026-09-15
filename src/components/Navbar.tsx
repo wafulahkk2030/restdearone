@@ -23,14 +23,14 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2">
           <img src={logo} alt="RestDearOne" className="h-10 w-auto" />
-          <span className="font-display text-xl font-semibold text-foreground hidden sm:inline">
+          <span className="hidden font-display text-xl font-semibold text-foreground sm:inline">
             RestDearOne
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden xl:flex items-center gap-6">
           {navLinks.map(link => (
             <Link
               key={link.to}
@@ -89,10 +89,12 @@ const Navbar = () => {
             </>
           )}
 
-          {/* Mobile menu toggle */}
+          {/* Compact menu remains active through tablet widths. */}
           <button
-            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-accent transition-colors"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-accent xl:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -101,7 +103,7 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-background border-b border-border px-4 py-4 space-y-2">
+        <div className="space-y-2 border-b border-border bg-background px-4 py-4 xl:hidden">
           {navLinks.map(link => (
             <Link
               key={link.to}
