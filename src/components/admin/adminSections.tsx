@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import AdminOverviewLive from "./AdminOverviewLive";
 import AdminAnalytics from "./AdminAnalytics";
+import AdminTraffic from "./AdminTraffic";
 import AdminKillSwitches from "./AdminKillSwitches";
 import AdminUsers from "./AdminUsers";
 import AdminUserDetails from "./AdminUserDetails";
