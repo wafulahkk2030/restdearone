@@ -24,6 +24,8 @@ import AdminTablePanel, { AdminTablePanelProps } from "./AdminTablePanel";
 export interface SectionCtx {
   userId: string;
   adminRole: string | null;
+  /** Whether the current admin may modify data in this subtab. */
+  canWrite: boolean;
 }
 
 export interface SubTab {
@@ -40,7 +42,9 @@ export interface Section {
 }
 
 /** Renders a live, data-backed table for a real database table. */
-const t = (props: AdminTablePanelProps): SubTab["render"] => () => <AdminTablePanel {...props} />;
+const t = (props: AdminTablePanelProps): SubTab["render"] =>
+  (ctx) => <AdminTablePanel {...props} readOnly={!ctx.canWrite} />;
+
 
 const created = { key: "created_at", label: "Created", type: "date" as const };
 

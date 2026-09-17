@@ -37,7 +37,10 @@ export interface AdminTablePanelProps {
   createFields?: CreateField[];
   pageSize?: number;
   emptyLabel?: string;
+  /** When true, the panel is view-only: no create, status change or delete. */
+  readOnly?: boolean;
 }
+
 
 const fmt = (value: any, type?: ColumnDef["type"]) => {
   if (value === null || value === undefined || value === "") return "—";
@@ -65,12 +68,17 @@ const AdminTablePanel = ({
   searchColumns = [],
   orderBy = { column: "created_at", ascending: false },
   baseFilter,
-  statusAction,
-  allowDelete = false,
-  createFields,
+  statusAction: statusActionProp,
+  allowDelete: allowDeleteProp = false,
+  createFields: createFieldsProp,
   pageSize = 25,
   emptyLabel = "Nothing here yet.",
+  readOnly = false,
 }: AdminTablePanelProps) => {
+  const statusAction = readOnly ? undefined : statusActionProp;
+  const allowDelete = readOnly ? false : allowDeleteProp;
+  const createFields = readOnly ? undefined : createFieldsProp;
+
   const { toast } = useToast();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +183,13 @@ const AdminTablePanel = ({
           {description && <p className="text-sm text-muted-foreground font-body">{description}</p>}
         </div>
       )}
+
+      {readOnly && (
+        <p className="text-xs font-body text-muted-foreground bg-muted/50 border border-border rounded-md px-3 py-2">
+          View only — your role cannot change records here.
+        </p>
+      )}
+
 
       <div className="flex flex-wrap items-center gap-2">
         {searchColumns.length > 0 && (

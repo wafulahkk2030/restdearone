@@ -8,31 +8,52 @@ import { motion } from "framer-motion";
 import { Shield, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { adminSections } from "@/components/admin/adminSections";
+import { canView, canWrite, roleLabel, roleSummary } from "@/components/admin/permissions";
 
 const Admin = () => {
   const { user, isAdmin, adminRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [sectionKey, setSectionKey] = useState<string>(adminSections[0].key);
-  const [subKey, setSubKey] = useState<string>(adminSections[0].subtabs[0].key);
+  const [sectionKey, setSectionKey] = useState<string>("");
+  const [subKey, setSubKey] = useState<string>("");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) navigate("/");
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Sections and subtabs this admin role is allowed to see.
+  const allowedSections = useMemo(
+    () =>
+      adminSections
+        .map((s) => ({ ...s, subtabs: s.subtabs.filter((st) => canView(adminRole, s.key, st.key)) }))
+        .filter((s) => canView(adminRole, s.key) && s.subtabs.length > 0),
+    [adminRole]
+  );
+
+  useEffect(() => {
+    if (!allowedSections.length) return;
+    const current = allowedSections.find((s) => s.key === sectionKey);
+    if (!current) {
+      setSectionKey(allowedSections[0].key);
+      setSubKey(allowedSections[0].subtabs[0].key);
+    } else if (!current.subtabs.some((st) => st.key === subKey)) {
+      setSubKey(current.subtabs[0].key);
+    }
+  }, [allowedSections, sectionKey, subKey]);
+
   const section = useMemo(
-    () => adminSections.find((s) => s.key === sectionKey) || adminSections[0],
-    [sectionKey]
+    () => allowedSections.find((s) => s.key === sectionKey) || allowedSections[0],
+    [allowedSections, sectionKey]
   );
   const subtab = useMemo(
-    () => section.subtabs.find((s) => s.key === subKey) || section.subtabs[0],
+    () => section?.subtabs.find((s) => s.key === subKey) || section?.subtabs[0],
     [section, subKey]
   );
 
   const filteredSections = useMemo(() => {
-    if (!query.trim()) return adminSections;
+    if (!query.trim()) return allowedSections;
     const q = query.toLowerCase();
-    return adminSections
+    return allowedSections
       .map((s) => ({
         ...s,
         subtabs: s.subtabs.filter(
@@ -40,9 +61,10 @@ const Admin = () => {
         ),
       }))
       .filter((s) => s.subtabs.length > 0);
-  }, [query]);
+  }, [query, allowedSections]);
 
   if (authLoading || !isAdmin) return null;
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,15 +76,17 @@ const Admin = () => {
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-7xl mx-auto">
-          <motion.div className="flex items-center gap-3 mb-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Shield className="w-8 h-8 text-primary" />
+          <motion.div className="flex items-start gap-3 mb-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Shield className="w-8 h-8 text-primary shrink-0" />
             <div>
               <h1 className="font-display text-3xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground font-body capitalize">
-                Role: {adminRole?.replace(/_/g, " ")} · {adminSections.length} sections
+              <p className="text-sm text-muted-foreground font-body">
+                {roleLabel(adminRole)} · {allowedSections.length} of {adminSections.length} sections available
               </p>
+              <p className="text-xs text-muted-foreground font-body mt-0.5 max-w-xl">{roleSummary(adminRole)}</p>
             </div>
           </motion.div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
             {/* Sidebar */}
@@ -125,21 +149,34 @@ const Admin = () => {
 
             {/* Content */}
             <main className="min-w-0">
-              <div className="mb-4">
-                <p className="text-xs font-body text-muted-foreground uppercase tracking-wide">
-                  {section.label}
+              {!section || !subtab ? (
+                <p className="text-sm font-body text-muted-foreground bg-card border border-border rounded-xl p-6">
+                  Your role has no dashboard areas assigned yet. Ask a Super Admin for access.
                 </p>
-                <h2 className="font-display text-2xl font-bold text-foreground">{subtab.label}</h2>
-              </div>
-              <motion.div
-                key={`${sectionKey}-${subKey}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {subtab.render({ userId: user!.id, adminRole })}
-              </motion.div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <p className="text-xs font-body text-muted-foreground uppercase tracking-wide">
+                      {section.label}
+                    </p>
+                    <h2 className="font-display text-2xl font-bold text-foreground">{subtab.label}</h2>
+                  </div>
+                  <motion.div
+                    key={`${section.key}-${subtab.key}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {subtab.render({
+                      userId: user!.id,
+                      adminRole,
+                      canWrite: canWrite(adminRole, section.key, subtab.key),
+                    })}
+                  </motion.div>
+                </>
+              )}
             </main>
+
           </div>
         </div>
       </div>
