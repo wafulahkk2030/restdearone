@@ -149,21 +149,34 @@ const Admin = () => {
 
             {/* Content */}
             <main className="min-w-0">
-              <div className="mb-4">
-                <p className="text-xs font-body text-muted-foreground uppercase tracking-wide">
-                  {section.label}
+              {!section || !subtab ? (
+                <p className="text-sm font-body text-muted-foreground bg-card border border-border rounded-xl p-6">
+                  Your role has no dashboard areas assigned yet. Ask a Super Admin for access.
                 </p>
-                <h2 className="font-display text-2xl font-bold text-foreground">{subtab.label}</h2>
-              </div>
-              <motion.div
-                key={`${sectionKey}-${subKey}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {subtab.render({ userId: user!.id, adminRole })}
-              </motion.div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <p className="text-xs font-body text-muted-foreground uppercase tracking-wide">
+                      {section.label}
+                    </p>
+                    <h2 className="font-display text-2xl font-bold text-foreground">{subtab.label}</h2>
+                  </div>
+                  <motion.div
+                    key={`${section.key}-${subtab.key}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {subtab.render({
+                      userId: user!.id,
+                      adminRole,
+                      canWrite: canWrite(adminRole, section.key, subtab.key),
+                    })}
+                  </motion.div>
+                </>
+              )}
             </main>
+
           </div>
         </div>
       </div>
