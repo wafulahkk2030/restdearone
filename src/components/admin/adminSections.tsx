@@ -50,6 +50,7 @@ export const adminSections: Section[] = [
     subtabs: [
       { key: "executive", label: "Executive Dashboard", render: () => <AdminOverviewLive /> },
       { key: "live", label: "Platform Analytics", render: () => <AdminAnalytics /> },
+      { key: "traffic", label: "Traffic & Visitors", render: () => <AdminTraffic /> },
       {
         key: "activity", label: "Admin Activity Log",
         render: t({
