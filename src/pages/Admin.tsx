@@ -76,15 +76,17 @@ const Admin = () => {
       <Navbar />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-7xl mx-auto">
-          <motion.div className="flex items-center gap-3 mb-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Shield className="w-8 h-8 text-primary" />
+          <motion.div className="flex items-start gap-3 mb-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Shield className="w-8 h-8 text-primary shrink-0" />
             <div>
               <h1 className="font-display text-3xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground font-body capitalize">
-                Role: {adminRole?.replace(/_/g, " ")} · {adminSections.length} sections
+              <p className="text-sm text-muted-foreground font-body">
+                {roleLabel(adminRole)} · {allowedSections.length} of {adminSections.length} sections available
               </p>
+              <p className="text-xs text-muted-foreground font-body mt-0.5 max-w-xl">{roleSummary(adminRole)}</p>
             </div>
           </motion.div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
             {/* Sidebar */}
