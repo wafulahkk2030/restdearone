@@ -8,31 +8,52 @@ import { motion } from "framer-motion";
 import { Shield, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { adminSections } from "@/components/admin/adminSections";
+import { canView, canWrite, roleLabel, roleSummary } from "@/components/admin/permissions";
 
 const Admin = () => {
   const { user, isAdmin, adminRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [sectionKey, setSectionKey] = useState<string>(adminSections[0].key);
-  const [subKey, setSubKey] = useState<string>(adminSections[0].subtabs[0].key);
+  const [sectionKey, setSectionKey] = useState<string>("");
+  const [subKey, setSubKey] = useState<string>("");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) navigate("/");
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Sections and subtabs this admin role is allowed to see.
+  const allowedSections = useMemo(
+    () =>
+      adminSections
+        .map((s) => ({ ...s, subtabs: s.subtabs.filter((st) => canView(adminRole, s.key, st.key)) }))
+        .filter((s) => canView(adminRole, s.key) && s.subtabs.length > 0),
+    [adminRole]
+  );
+
+  useEffect(() => {
+    if (!allowedSections.length) return;
+    const current = allowedSections.find((s) => s.key === sectionKey);
+    if (!current) {
+      setSectionKey(allowedSections[0].key);
+      setSubKey(allowedSections[0].subtabs[0].key);
+    } else if (!current.subtabs.some((st) => st.key === subKey)) {
+      setSubKey(current.subtabs[0].key);
+    }
+  }, [allowedSections, sectionKey, subKey]);
+
   const section = useMemo(
-    () => adminSections.find((s) => s.key === sectionKey) || adminSections[0],
-    [sectionKey]
+    () => allowedSections.find((s) => s.key === sectionKey) || allowedSections[0],
+    [allowedSections, sectionKey]
   );
   const subtab = useMemo(
-    () => section.subtabs.find((s) => s.key === subKey) || section.subtabs[0],
+    () => section?.subtabs.find((s) => s.key === subKey) || section?.subtabs[0],
     [section, subKey]
   );
 
   const filteredSections = useMemo(() => {
-    if (!query.trim()) return adminSections;
+    if (!query.trim()) return allowedSections;
     const q = query.toLowerCase();
-    return adminSections
+    return allowedSections
       .map((s) => ({
         ...s,
         subtabs: s.subtabs.filter(
@@ -40,9 +61,10 @@ const Admin = () => {
         ),
       }))
       .filter((s) => s.subtabs.length > 0);
-  }, [query]);
+  }, [query, allowedSections]);
 
   if (authLoading || !isAdmin) return null;
+
 
   return (
     <div className="min-h-screen bg-background">
