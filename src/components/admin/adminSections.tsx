@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import AdminOverviewLive from "./AdminOverviewLive";
 import AdminAnalytics from "./AdminAnalytics";
+import AdminTraffic from "./AdminTraffic";
 import AdminKillSwitches from "./AdminKillSwitches";
 import AdminUsers from "./AdminUsers";
 import AdminUserDetails from "./AdminUserDetails";
@@ -49,6 +50,7 @@ export const adminSections: Section[] = [
     subtabs: [
       { key: "executive", label: "Executive Dashboard", render: () => <AdminOverviewLive /> },
       { key: "live", label: "Platform Analytics", render: () => <AdminAnalytics /> },
+      { key: "traffic", label: "Traffic & Visitors", render: () => <AdminTraffic /> },
       {
         key: "activity", label: "Admin Activity Log",
         render: t({
