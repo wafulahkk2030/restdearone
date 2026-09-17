@@ -68,12 +68,17 @@ const AdminTablePanel = ({
   searchColumns = [],
   orderBy = { column: "created_at", ascending: false },
   baseFilter,
-  statusAction,
-  allowDelete = false,
-  createFields,
+  statusAction: statusActionProp,
+  allowDelete: allowDeleteProp = false,
+  createFields: createFieldsProp,
   pageSize = 25,
   emptyLabel = "Nothing here yet.",
+  readOnly = false,
 }: AdminTablePanelProps) => {
+  const statusAction = readOnly ? undefined : statusActionProp;
+  const allowDelete = readOnly ? false : allowDeleteProp;
+  const createFields = readOnly ? undefined : createFieldsProp;
+
   const { toast } = useToast();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
