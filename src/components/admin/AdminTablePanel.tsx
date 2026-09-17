@@ -37,7 +37,10 @@ export interface AdminTablePanelProps {
   createFields?: CreateField[];
   pageSize?: number;
   emptyLabel?: string;
+  /** When true, the panel is view-only: no create, status change or delete. */
+  readOnly?: boolean;
 }
+
 
 const fmt = (value: any, type?: ColumnDef["type"]) => {
   if (value === null || value === undefined || value === "") return "—";
