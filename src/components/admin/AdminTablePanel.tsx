@@ -184,6 +184,13 @@ const AdminTablePanel = ({
         </div>
       )}
 
+      {readOnly && (
+        <p className="text-xs font-body text-muted-foreground bg-muted/50 border border-border rounded-md px-3 py-2">
+          View only — your role cannot change records here.
+        </p>
+      )}
+
+
       <div className="flex flex-wrap items-center gap-2">
         {searchColumns.length > 0 && (
           <Input
