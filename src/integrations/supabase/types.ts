@@ -2246,6 +2246,10 @@ export type Database = {
         Args: { amount_input: number; fundraiser_id_input: string }
         Returns: undefined
       }
+      increment_legend_tribute_amount: {
+        Args: { amount_input: number; legend_id_input: string }
+        Returns: undefined
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

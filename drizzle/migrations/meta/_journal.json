@@ -8,6 +8,13 @@
       "when": 1789456567446,
       "tag": "0000_create_page_views_traffic",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790001102445,
+      "tag": "0001_increment_legend_tribute_amount",
+      "breakpoints": true
     }
   ]
 }
