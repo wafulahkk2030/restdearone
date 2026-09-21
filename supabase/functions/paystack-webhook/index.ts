@@ -25,7 +25,15 @@ Deno.serve(async (req: Request) => {
     const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
     const expectedSig = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
 
-    if (expectedSig !== signature) {
+    // Constant-time comparison to avoid timing attacks
+    const timingSafeEqual = (a: string, b: string) => {
+      if (a.length !== b.length) return false;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+      return diff === 0;
+    };
+
+    if (!timingSafeEqual(expectedSig, signature)) {
       console.error("Invalid Paystack signature");
       return new Response("Invalid signature", { status: 400 });
     }
@@ -223,10 +231,13 @@ Deno.serve(async (req: Request) => {
       }
 
       const completedTribute = completedTributes[0];
-      const { data: legend } = await supabase.from("national_legends").select("current_tribute_amount, full_name").eq("id", metadata.legend_id).single();
+      const { data: legend } = await supabase.from("national_legends").select("full_name").eq("id", metadata.legend_id).single();
       if (legend) {
-        const newTotal = (legend.current_tribute_amount || 0) + Number(completedTribute.amount || 0);
-        await supabase.from("national_legends").update({ current_tribute_amount: newTotal }).eq("id", metadata.legend_id);
+        // Atomic increment — safe when two tributes complete at the same moment
+        await supabase.rpc("increment_legend_tribute_amount", {
+          legend_id_input: metadata.legend_id,
+          amount_input: Math.round(Number(completedTribute.amount || 0)),
+        });
         const { data: admins } = await supabase.from("user_roles").select("user_id").in("role", ["super_admin", "platform_admin"]);
         for (const admin of (admins || [])) {
           await supabase.from("notifications").insert({
