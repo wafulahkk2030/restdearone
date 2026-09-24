@@ -117,6 +117,15 @@ const AdminNationalLegends = () => {
           )}
         </div>
       ))}
+      <div className="flex items-center justify-between pt-2">
+        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+          <ChevronLeft className="w-4 h-4" /> Prev
+        </Button>
+        <span className="text-xs text-muted-foreground font-body">Page {page + 1} of {totalPages} · {count} total</span>
+        <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          Next <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
     </div>
   );
 };
