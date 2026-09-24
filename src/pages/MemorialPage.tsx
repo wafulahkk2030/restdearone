@@ -526,6 +526,11 @@ const MemorialPage = () => {
         <title>{memorial?.full_name ? `${memorial.full_name} — RestDearOne Memory Page` : 'Memory Page — RestDearOne'}</title>
         <meta name="description" content={memorial?.personality_summary ? `${memorial.personality_summary.slice(0, 155)}` : 'A living memory page preserving the story, lessons, and memories of a loved one on RestDearOne.'} />
         <link rel="canonical" href={`https://restdearone.lovable.app/memorial/${id}`} />
+        <meta property="og:type" content="profile" />
+        <meta property="og:title" content={memorial?.full_name ? `Remembering ${memorial.full_name} (${memorial.birth_year}–${memorial.death_year})` : 'Memory Page — RestDearOne'} />
+        <meta property="og:description" content={memorial?.what_to_remember?.slice(0, 155) || memorial?.personality_summary?.slice(0, 155) || 'Share a memory and keep their story alive on RestDearOne.'} />
+        <meta property="og:url" content={`https://restdearone.lovable.app/memorial/${id}`} />
+        <meta name="twitter:title" content={memorial?.full_name ? `Remembering ${memorial.full_name}` : 'RestDearOne'} />
       </Helmet>
       <Navbar />
       <div className="pt-24 pb-16 px-4">
