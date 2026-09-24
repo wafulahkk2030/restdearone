@@ -11,7 +11,7 @@ const AdminCommunities = ({ userId, adminRole }: { userId: string; adminRole: st
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from("community_groups").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("community_groups").select("*").order("created_at", { ascending: false }).limit(500);
     setCommunities(data || []);
     setLoading(false);
   };

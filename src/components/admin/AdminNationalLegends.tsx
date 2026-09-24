@@ -13,7 +13,7 @@ const AdminNationalLegends = () => {
   const [form, setForm] = useState<any>({});
 
   const load = async () => {
-    const { data } = await supabase.from("national_legends").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("national_legends").select("*").order("created_at", { ascending: false }).limit(500);
     setLegends(data || []);
   };
   useEffect(() => { load(); }, []);
