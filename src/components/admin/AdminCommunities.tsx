@@ -2,21 +2,31 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Users, BookOpen, Crown } from "lucide-react";
+import { Users, BookOpen, Crown, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 50;
 
 const AdminCommunities = ({ userId, adminRole }: { userId: string; adminRole: string | null }) => {
   const { toast } = useToast();
   const [communities, setCommunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [count, setCount] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
-  const load = async () => {
+  const load = async (p = page) => {
     setLoading(true);
-    const { data } = await supabase.from("community_groups").select("*").order("created_at", { ascending: false }).limit(500);
+    const { data, count: total } = await supabase
+      .from("community_groups")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE - 1);
     setCommunities(data || []);
+    setCount(total || 0);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page); }, [page]);
 
   const deleteCommunity = async (id: string, name: string) => {
     if (!confirm(`Delete community "${name}"? This removes all members and stories. Cannot be undone.`)) return;
@@ -81,6 +91,15 @@ const AdminCommunities = ({ userId, adminRole }: { userId: string; adminRole: st
           </div>
         </div>
       ))}
+      <div className="flex items-center justify-between pt-2">
+        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+          <ChevronLeft className="w-4 h-4" /> Prev
+        </Button>
+        <span className="text-xs text-muted-foreground font-body">Page {page + 1} of {totalPages} · {count} total</span>
+        <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          Next <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
     </div>
   );
 };

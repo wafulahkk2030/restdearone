@@ -4,19 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Flag, Check, X, Edit3, Save } from "lucide-react";
+import { Flag, Check, X, Edit3, Save, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 50;
 
 const AdminNationalLegends = () => {
   const { toast } = useToast();
   const [legends, setLegends] = useState<any[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<any>({});
+  const [page, setPage] = useState(0);
+  const [count, setCount] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
-  const load = async () => {
-    const { data } = await supabase.from("national_legends").select("*").order("created_at", { ascending: false }).limit(500);
+  const load = async (p = page) => {
+    const { data, count: total } = await supabase
+      .from("national_legends")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE - 1);
     setLegends(data || []);
+    setCount(total || 0);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page); }, [page]);
 
   const startEdit = (l: any) => {
     setEditing(l.id);
@@ -107,6 +117,15 @@ const AdminNationalLegends = () => {
           )}
         </div>
       ))}
+      <div className="flex items-center justify-between pt-2">
+        <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+          <ChevronLeft className="w-4 h-4" /> Prev
+        </Button>
+        <span className="text-xs text-muted-foreground font-body">Page {page + 1} of {totalPages} · {count} total</span>
+        <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          Next <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
     </div>
   );
 };
