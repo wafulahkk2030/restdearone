@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { z } from "npm:zod@3.23.8";
+import { escalatingFee } from "../_shared/pricing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,14 +79,13 @@ Deno.serve(async (req: Request) => {
       // Server-side verification: count user's memorials to determine correct price
       const { count } = await serviceClient.from("memorial_pages").select("id", { count: "exact", head: true }).eq("created_by", user.id);
       const totalCreated = (count || 1) - 1; // -1 because the current one was just created
-      const groupNumber = Math.floor(totalCreated / 3);
-      const positionInGroup = totalCreated % 3;
+      const fee = escalatingFee(totalCreated);
       
-      if (positionInGroup !== 2) {
+      if (!fee.required) {
         throw new Error("Payment not required for this memorial");
       }
       
-      const serverAmount = 250 + (groupNumber * 250);
+      const serverAmount = fee.amount;
       amount = serverAmount * 100; // Convert to kobo/cents
       metadata.memorial_id = memorial_id;
       metadata.type = "memorial_creation";
@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
         throw new Error("Payment not required for this story");
       }
       
-      const serverAmount = 250 + (groupNumber * 250);
+      const serverAmount = fee.amount;
       amount = serverAmount * 100;
       metadata.memorial_id = memorial_id;
       metadata.type = "story_posting";
