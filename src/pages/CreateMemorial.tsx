@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { escalatingFee } from "@/lib/pricing";
 import DuplicateMemorialDialog from "@/components/memorial/DuplicateMemorialDialog";
 
 const relationships = [
@@ -44,22 +45,8 @@ const CreateMemorial = () => {
   const checkMemorialLimits = async () => {
     if (!user) return null;
     const { count } = await supabase.from("memorial_pages").select("id", { count: "exact", head: true }).eq("created_by", user.id);
-    const totalCreated = count || 0;
-    
-    // Every 3rd memorial costs money. Pattern: 2 free, 1 paid, 2 free, 1 paid...
-    // Group of 3: positions 0,1 are free, position 2 is paid
-    const positionInGroup = totalCreated % 3; // 0, 1, 2
-    const groupNumber = Math.floor(totalCreated / 3); // 0, 1, 2, ...
-    
-    if (positionInGroup === 2) {
-      // This is the 3rd in the group - payment required
-      const amount = 250 + (groupNumber * 250); // 250, 500, 750...
-      return { required: true, amount, freeRemaining: 0 };
-    } else {
-      const freeRemaining = 2 - positionInGroup;
-      const nextPaymentAmount = 250 + (groupNumber * 250);
-      return { required: false, amount: nextPaymentAmount, freeRemaining };
-    }
+        
+    return escalatingFee(count || 0);
   };
 
   const handleContinueToStep2 = async () => {
