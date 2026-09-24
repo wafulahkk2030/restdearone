@@ -45,7 +45,7 @@ const AdminKillSwitches = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await (supabase.from as any)("site_settings").select("*").eq("id", true).single();
+    const { data } = await supabase.from("site_settings").select("*").eq("id", true).single();
     setSettings(data);
     setLoading(false);
   };
@@ -55,7 +55,7 @@ const AdminKillSwitches = () => {
   const save = async () => {
     if (!settings) return;
     setSaving(true);
-    const { error } = await (supabase.from as any)("site_settings")
+    const { error } = await supabase.from("site_settings")
       .update({ ...settings, updated_by: user?.id })
       .eq("id", true);
     setSaving(false);

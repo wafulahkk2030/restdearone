@@ -6,7 +6,7 @@ import { Download, Mail } from "lucide-react";
 const AdminNewsletter = () => {
   const [subs, setSubs] = useState<any[]>([]);
   const load = async () => {
-    const { data } = await supabase.from("newsletter_subscribers").select("*").order("subscribed_at", { ascending: false });
+    const { data } = await supabase.from("newsletter_subscribers").select("*").order("subscribed_at", { ascending: false }).limit(500);
     setSubs(data || []);
   };
   useEffect(() => { load(); }, []);
