@@ -1,15 +1,25 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, Mail } from "lucide-react";
+import { Download, Mail, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 50;
 
 const AdminNewsletter = () => {
   const [subs, setSubs] = useState<any[]>([]);
-  const load = async () => {
-    const { data } = await supabase.from("newsletter_subscribers").select("*").order("subscribed_at", { ascending: false }).limit(500);
+  const [page, setPage] = useState(0);
+  const [count, setCount] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+  const load = async (p = page) => {
+    const { data, count: total } = await supabase
+      .from("newsletter_subscribers")
+      .select("*", { count: "exact" })
+      .order("subscribed_at", { ascending: false })
+      .range(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE - 1);
     setSubs(data || []);
+    setCount(total || 0);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(page); }, [page]);
 
   const exportCsv = () => {
     const header = "Email,Name,Source,Active,Subscribed At\n";
