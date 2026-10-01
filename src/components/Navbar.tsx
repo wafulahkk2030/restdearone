@@ -16,6 +16,7 @@ const Navbar = () => {
     { to: "/communities", label: "Communities" },
     { to: "/forum", label: "Forum" },
     { to: "/discover", label: "Discover a Life" },
+    ...(user ? [{ to: "/chat", label: "Chat" }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
