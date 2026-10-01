@@ -90,18 +90,20 @@ const matches = (list: string[], sectionKey: string, subKey?: string) =>
 export const getPolicy = (role: string | null): RolePolicy | null =>
   role && role in ROLE_POLICIES ? ROLE_POLICIES[role as AdminRole] : null;
 
+/** Every admin can SEE every area (full overview); only role assignment stays Super-Admin-only. */
 export const canView = (role: string | null, sectionKey: string, subKey?: string) => {
   const policy = getPolicy(role);
   if (!policy) return false;
-  if (policy.deny && matches(policy.deny, sectionKey, subKey)) return false;
-  if (policy.view === "*") return true;
-  return matches(policy.view, sectionKey, subKey);
+  if (role !== "super_admin" && sectionKey === "users" && subKey === "roles") return false;
+  return true;
 };
 
+/** Changes are limited to each role's own remit; other areas are view-only. */
 export const canWrite = (role: string | null, sectionKey: string, subKey?: string) => {
   const policy = getPolicy(role);
   if (!policy) return false;
   if (!canView(role, sectionKey, subKey)) return false;
+  if (policy.deny && matches(policy.deny, sectionKey, subKey)) return false;
   if (policy.write === "*") return true;
   return matches(policy.write, sectionKey, subKey);
 };
