@@ -15,6 +15,13 @@
       "when": 1790001102445,
       "tag": "0001_increment_legend_tribute_amount",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790874918716,
+      "tag": "0002_restore_fundraiser_grants",
+      "breakpoints": true
     }
   ]
 }
