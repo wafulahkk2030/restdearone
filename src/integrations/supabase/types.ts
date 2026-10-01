@@ -2235,6 +2235,7 @@ export type Database = {
       }
     }
     Functions: {
+      community_member_role: { Args: { _member_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2250,7 +2251,15 @@ export type Database = {
         Args: { amount_input: number; legend_id_input: string }
         Returns: undefined
       }
+      is_active_community_member: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_chat_member: {
+        Args: { _chat_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
