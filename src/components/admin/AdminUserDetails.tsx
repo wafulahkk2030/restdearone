@@ -74,7 +74,7 @@ const AdminUserDetails = () => {
       body: { action, target_user_id, ...extra },
     });
     if (error || (data as any)?.error) {
-      toast({ title: `${label} failed`, description: error?.message || (data as any)?.error, variant: "destructive" });
+      toast({ title: `${label} failed`, description: error ? await extractError(error) : (data as any)?.error, variant: "destructive" });
     } else {
       toast({ title: `${label} done` });
       load();
