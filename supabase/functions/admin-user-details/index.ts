@@ -22,9 +22,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
-    const isTopAdmin = (roles || []).some((r: any) => ["super_admin", "platform_admin"].includes(r.role));
-    if (!isTopAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const ADMIN_ROLES = ["super_admin", "platform_admin", "community_moderator", "memorial_moderator", "support_admin"];
+    const isAdmin = (roles || []).some((r: any) => ADMIN_ROLES.includes(r.role));
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden: admin role required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const url = new URL(req.url);
