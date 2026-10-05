@@ -42,14 +42,24 @@ const AdminUserDetails = () => {
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  const extractError = async (error: any): Promise<string> => {
+    try {
+      const ctx = error?.context;
+      if (ctx && typeof ctx.json === "function") {
+        const body = await ctx.json();
+        if (body?.error) return body.error;
+      }
+    } catch { /* ignore */ }
+    return error?.message || "Unknown error";
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("admin-user-details", {
       method: "GET" as any,
-      // pass page via query — invoke doesn't support query params directly; use body fallback
     } as any);
     if (error) {
-      toast({ title: "Load failed", description: error.message, variant: "destructive" });
+      toast({ title: "Load failed", description: await extractError(error), variant: "destructive" });
       setLoading(false);
       return;
     }
