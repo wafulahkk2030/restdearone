@@ -27,12 +27,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId)
-      .limit(1)
-      .maybeSingle();
-    if (data) {
+      .eq("user_id", userId);
+    const order = ["super_admin", "platform_admin", "community_moderator", "memorial_moderator", "support_admin"];
+    const best = (data || []).map((r) => r.role as string).sort((a, b) => order.indexOf(a) - order.indexOf(b))[0];
+    if (best) {
       setIsAdmin(true);
-      setAdminRole(data.role);
+      setAdminRole(best);
     } else {
       setIsAdmin(false);
       setAdminRole(null);
