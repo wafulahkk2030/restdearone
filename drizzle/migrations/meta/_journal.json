@@ -29,6 +29,13 @@
       "when": 1790875483296,
       "tag": "0003_fix_rls_recursion_chat_community",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792156423858,
+      "tag": "0004_admin_role_scoped_writes",
+      "breakpoints": true
     }
   ]
 }

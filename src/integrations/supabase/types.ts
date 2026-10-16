@@ -2235,6 +2235,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_can_write_area: {
+        Args: { _area: string; _user_id: string }
+        Returns: boolean
+      }
       community_member_role: { Args: { _member_id: string }; Returns: string }
       has_role: {
         Args: {
