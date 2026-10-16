@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { Shield, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { adminSections } from "@/components/admin/adminSections";
+import { adminSections, selfGuardedRenders } from "@/components/admin/adminSections";
 import { canView, canWrite, roleLabel, roleSummary } from "@/components/admin/permissions";
 
 const Admin = () => {
@@ -167,11 +167,21 @@ const Admin = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {subtab.render({
-                      userId: user!.id,
-                      adminRole,
-                      canWrite: canWrite(adminRole, section.key, subtab.key),
-                    })}
+                    {(() => {
+                      const writable = canWrite(adminRole, section.key, subtab.key);
+                      const content = subtab.render({ userId: user!.id, adminRole, canWrite: writable });
+                      if (writable || selfGuardedRenders.has(subtab.render)) return content;
+                      return (
+                        <>
+                          <p className="mb-3 text-xs font-body text-muted-foreground bg-muted/50 border border-border rounded-lg px-3 py-2">
+                            View only — this area is outside your role ({roleLabel(adminRole)}). Changes are disabled.
+                          </p>
+                          <fieldset disabled className="contents [&_button]:pointer-events-none [&_button]:opacity-50">
+                            {content}
+                          </fieldset>
+                        </>
+                      );
+                    })()}
                   </motion.div>
                 </>
               )}

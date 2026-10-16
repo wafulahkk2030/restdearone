@@ -42,8 +42,13 @@ export interface Section {
 }
 
 /** Renders a live, data-backed table for a real database table. */
-const t = (props: AdminTablePanelProps): SubTab["render"] =>
-  (ctx) => <AdminTablePanel {...props} readOnly={!ctx.canWrite} />;
+/** Renders that enforce read-only mode themselves (others get wrapped by the shell). */
+export const selfGuardedRenders = new WeakSet<SubTab["render"]>();
+const t = (props: AdminTablePanelProps): SubTab["render"] => {
+  const r: SubTab["render"] = (ctx) => <AdminTablePanel {...props} readOnly={!ctx.canWrite} />;
+  selfGuardedRenders.add(r);
+  return r;
+};
 
 
 const created = { key: "created_at", label: "Created", type: "date" as const };
